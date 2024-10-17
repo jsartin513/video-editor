@@ -3,7 +3,7 @@ from video_snippet import VideoClip
 
 
 
-class CompositeVideoClip():
+class MultipleSpeedsClip():
     def __init__(self, name, start_time, transition_times, transition_speeds, end_time):
         self.name = name
         self.start_time = start_time
@@ -28,7 +28,7 @@ second_file_name = "BDL Open Gym 10.6.24： 3 Team Rotation.mp4"
 file_path = folder_path + file_name
 
 def run():
-    create_video_snippets(file_path, snippets)
+    create_video_snippets(folder_path, file_name, snippets)
 
 if __name__ == '__main__':
     run()

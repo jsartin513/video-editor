@@ -47,10 +47,12 @@ class VideoClipMaker:
         
     
 
-def create_video_snippets(input_file, snippets):
+def create_video_snippets(folder_path, input_file_name, snippets):
+    input_file = folder_path + input_file_name
     for snippet in snippets:
         clip = VideoFileClip(input_file).subclip(snippet.start_time, snippet.end_time).fx(vfx.speedx, snippet.speed)
-        clip.write_videofile(snippet.filename())
+        output_filename = folder_path + snippet.filename()
+        clip.write_videofile(output_filename)
         print(f"Snippet {snippet.filename()} created")
 
 def merge_video_snippets(output_file, input_files):
