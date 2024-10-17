@@ -22,28 +22,13 @@ snippets = [
 
 ]
 
-        
-            
+folder_path = "/Users/jessica.sartin/Movies/October 2024 open gyms"
+file_name = "BDL Open Gym 10.13.24： 3 Team Rotation.mp4"
+second_file_name = "BDL Open Gym 10.6.24： 3 Team Rotation.mp4"
+file_path = folder_path + file_name
 
+def run():
+    create_video_snippets(file_path, snippets)
 
-def get_end_time(time, duration):
-    time = time.split(":")
-    seconds = int(time[1]) + duration
-    time[1] = str(seconds)
-    return ":".join(time)
-
-for snippet in snippets:
-    start_time = snippet.start_time
-    end_time = get_end_time(start_time, snippet.duration)
-    if snippet.name.endswith(".mp4"):
-        new_filename = FILE_PATH + snippet.name
-    else:
-        new_filename = FILE_PATH + snippet.name + ".mp4"
-    snippet.end_time = end_time
-    
-
-
-file_path = "/Users/jessica.sartin/Movies/BDL Open Gym 8.4.24：  3 Team Rotation.mp4"
-# file_path = "/Users/jessica.sartin/Movies/BDL Open Gym 7.28.24： 6v6 Warm Up Matches.mp4"
-
-create_video_snippets(file_path, snippets)
+if __name__ == '__main__':
+    run()
