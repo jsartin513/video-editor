@@ -102,8 +102,9 @@ def rename_videos(directory_name, ordered_teams_including_refs):
         
 
 
-def run(directory_name, ordered_teams_including_refs):
-    pass
+def run(directory_name, ordered_teams_including_refs, home_team_timestamps=None, away_team_timestamps=None):
+    # Rename the videos in the directory
+    rename_videos(directory_name, ordered_teams_including_refs)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
