@@ -1,5 +1,6 @@
 import argparse
 import os
+import shutil
 from moviepy.editor import *
 
 import subprocess
@@ -98,6 +99,10 @@ def rename_videos(directory_name, ordered_teams_including_refs):
     # We will rename it to the following format: "Home Team vs. Away Team.mp4"
     # If the video is less than 5 minutes long, we will ignore it
     home_team_index = 0
+    output_directory = f'{directory_name}/processed_videos'
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
     for video in list_files_sorted_by_date(directory_name):
         if video.endswith(".mp4"):
             video_path = os.path.join(directory_name, video)
@@ -111,13 +116,15 @@ def rename_videos(directory_name, ordered_teams_including_refs):
                 away_team = ordered_teams_including_refs[home_team_index + 1]
                 home_team_index += 3
                 new_video_name = f"{home_team} vs. {away_team}.mp4"
-                new_video_path = os.path.join(directory_name, new_video_name)
-                os.rename(video_path, new_video_path)
-                log(f"Renamed {video} to {new_video_name}")
+                new_video_path = os.path.join(output_directory, new_video_name)
+                shutil.copy(video_path, new_video_path)
+                log(f"Copied {video} to {new_video_path}")
+                # os.rename(new_video_path, os.path.join(output_directory, new_video_name))
+                # log(f"Renamed {video} to {new_video_name}")
 
-                # Add the team names to the video
-                add_team_name_to_video(new_video_path, home_team, away_team)
-                log(f"Added team names to {new_video_name}")
+                # # Add the team names to the video
+                # add_team_name_to_video(new_video_path, home_team, away_team)
+                # log(f"Added team names to {new_video_name}")
             else:
                 log(f"Ignoring {video} because it is too short to be a matchup")
         else:
