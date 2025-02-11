@@ -114,6 +114,12 @@ def rename_videos(directory_name, ordered_teams_including_refs):
                 new_video_path = os.path.join(directory_name, new_video_name)
                 os.rename(video_path, new_video_path)
                 log(f"Renamed {video} to {new_video_name}")
+
+                # Add the team names to the video
+                add_team_name_to_video(new_video_path, home_team, away_team)
+                log(f"Added team names to {new_video_name}")
+            else:
+                log(f"Ignoring {video} because it is too short to be a matchup")
         else:
             log(f"Ignoring {video}")
         
