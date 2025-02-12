@@ -1,7 +1,10 @@
 import argparse
 import os
 import shutil
-from moviepy.editor import *
+from moviepy.video.VideoClip import *
+from moviepy.video.io.VideoFileClip import VideoFileClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
+from moviepy.video.compositing import concatenate_videoclips
 
 import subprocess
 
@@ -30,14 +33,29 @@ def add_team_name_to_video(filename, home_team, away_team):
     output_path = f"{filename}_with_team_names.mp4"
     text = f"{home_team} vs. {away_team}"
     video = VideoFileClip(filename)
-    text_clip = (
-    TextClip(text, fontsize=30, color="blue", font="Arial")
-    .set_position(("center", "bottom"))
-    .set_duration(video.duration)
+    font_path = "./font/font.ttf"
+    home_team_clip = (
+    TextClip(font=font_path, text=home_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
+    .with_position(("center", "bottom"))
+    .with_duration(video.duration)
+    )
+    away_team_clip = (
+    TextClip(font=font_path, text=away_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
+    .with_position(("center", "top"))
+    .with_duration(video.duration)
     )
 
-    video_with_text = CompositeVideoClip([video, text_clip])
+    video_with_text = CompositeVideoClip([video, home_team_clip])
+
     video_with_text.write_videofile(output_path, codec="libx264", fps=24)
+
+add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/short_video.mp4", "team 1", "team 2")
+
+# This 
+def create_opening_screen(home_team, away_team):
+    text = f"{home_team} vs. {away_team}"
+
+
 
 # Add the scores to the video
 ### home_team_timestamps: a list of timestamps where the home team scored
@@ -57,7 +75,7 @@ def add_scores_to_video(filename, home_team, away_team, home_team_timestamps, aw
     for timestamp in all_sorted_timestamps:
         duration = timestamp - current_timestamp
         text_clip = (
-            TextClip(text, fontsize=30, color="blue", font="Arial")
+            TextClip(text, fontsize=30, font="../fonts/font.ttf" color="blue", font="Arial")
             .set_position(("center", "bottom"))
             .set_duration(duration)
         )
@@ -115,12 +133,11 @@ def rename_videos(directory_name, ordered_teams_including_refs):
                 home_team = ordered_teams_including_refs[home_team_index]
                 away_team = ordered_teams_including_refs[home_team_index + 1]
                 home_team_index += 3
-                new_video_name = f"{home_team} vs. {away_team}.mp4"
+                new_video_name = f"{home_team}_{away_team}_round_robin.mp4"
                 new_video_path = os.path.join(output_directory, new_video_name)
                 shutil.copy(video_path, new_video_path)
                 log(f"Copied {video} to {new_video_path}")
-                # os.rename(new_video_path, os.path.join(output_directory, new_video_name))
-                # log(f"Renamed {video} to {new_video_name}")
+
 
                 # # Add the team names to the video
                 # add_team_name_to_video(new_video_path, home_team, away_team)
