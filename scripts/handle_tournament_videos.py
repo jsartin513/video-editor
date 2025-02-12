@@ -43,11 +43,10 @@ def add_team_name_to_video(filename, home_team, away_team):
     )
     away_team_clip = (
     TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
-    .with_position(("center", "top"))
     .with_duration(video.duration)
     )
 
-    video_with_text = CompositeVideoClip([video, home_team_clip])
+    video_with_text = CompositeVideoClip([video, home_team_clip, away_team_clip])
 
     video_with_text.write_videofile(output_path, codec="libx264", fps=24)
 
