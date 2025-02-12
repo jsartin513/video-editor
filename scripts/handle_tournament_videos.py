@@ -4,13 +4,16 @@ import shutil
 from moviepy.video.VideoClip import *
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from moviepy.video.compositing import concatenate_videoclips
+from moviepy import *
 
 import subprocess
+
 
 ROUND_ROBIN_COURT_1_TEAMS = ["home1", "away1", "ref1", "home2", "away2", "ref2", "home3", "away3", "ref3", "home4", "away4", "ref4", "home5", "away5", "ref5", "home6", "away6", "ref6"]
 ROUND_ROBIN_COURT_2_TEAMS = []
 ROUND_ROBIN_COURT_3_TEAMS = []
+
+FONT_PATH = "./font/font.ttf"
 
 def log(message):
     print(message)
@@ -33,14 +36,13 @@ def add_team_name_to_video(filename, home_team, away_team):
     output_path = f"{filename}_with_team_names.mp4"
     text = f"{home_team} vs. {away_team}"
     video = VideoFileClip(filename)
-    font_path = "./font/font.ttf"
     home_team_clip = (
-    TextClip(font=font_path, text=home_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
+    TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
     .with_position(("center", "bottom"))
     .with_duration(video.duration)
     )
     away_team_clip = (
-    TextClip(font=font_path, text=away_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
+    TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow", margin=(0, 0, 20, 0))
     .with_position(("center", "top"))
     .with_duration(video.duration)
     )
@@ -51,11 +53,26 @@ def add_team_name_to_video(filename, home_team, away_team):
 
 add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/short_video.mp4", "team 1", "team 2")
 
-# This 
+# This will create a video with a plain black background.
+# The home team name will come in from the top left
+# And the away team name will come in from the bottom right
+# Until they meet in the center
 def create_opening_screen(home_team, away_team):
-    text = f"{home_team} vs. {away_team}"
+    background_image = ColorClip((1280, 720), color=(0, 0, 0)).with_duration(5)
+    output_path = f"{home_team}_vs_{away_team}__opening_screen.mp4"
+    home_team_clip = (
+        TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", bg_color="yellow", duration=5)
+        # .with_position(("left", "top"))
+        .with_duration(2).with_effects([vfx.SlideIn(1, "left")])
+    )
+    away_team_clip = (
+        TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow", duration=5)
+        .with_duration(2).with_effects([vfx.SlideIn(2, "bottom")])
+    )
+    opening_screen = CompositeVideoClip([background_image, home_team_clip, away_team_clip])
+    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
-
+create_opening_screen("Kids Next Door", "Boston T Titans")
 
 # Add the scores to the video
 ### home_team_timestamps: a list of timestamps where the home team scored
