@@ -67,7 +67,7 @@ def create_opening_screen(home_team, away_team):
     )
     away_team_clip = (
         TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow", duration=5)
-        .with_duration(2).with_effects([vfx.SlideIn(2, "bottom")])
+        .with_duration(2).with_effects([vfx.SlideIn(1, "bottom")])
     )
     opening_screen = CompositeVideoClip([background_image, home_team_clip, away_team_clip])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
