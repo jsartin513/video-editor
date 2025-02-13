@@ -43,7 +43,7 @@ def add_team_name_to_video(filename, home_team, away_team):
 
     video_with_text.write_videofile(output_path, codec="libx264", fps=24)
 
-add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
+# add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
 
 
@@ -77,7 +77,7 @@ def create_opening_screen(home_team, away_team):
     opening_screen = CompositeVideoClip([background_image, home_team_clip, home_team_logo_clip, away_team_clip, away_team_logo_clip])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
-create_opening_screen("Kids Next Door", "Boston T Titans")
+# create_opening_screen("Kids Next Door", "Boston T Titans")
 
 # returns: list of dictionaries with the home team and away team names
 def get_ordered_teams(court_number):
