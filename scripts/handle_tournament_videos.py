@@ -79,41 +79,6 @@ def create_opening_screen(home_team, away_team):
 
 create_opening_screen("Kids Next Door", "Boston T Titans")
 
-# Add the scores to the video
-### home_team_timestamps: a list of timestamps where the home team scored
-### away_team_timestamps: a list of timestamps where the away team scored
-### filename: the name of the video file
-### home_team: the name of the home team
-### away_team: the name of the away team
-def add_scores_to_video(filename, home_team, away_team, home_team_timestamps, away_team_timestamps):
-    output_path = f"{filename}_with_scores.mp4"
-    video = VideoFileClip(filename)
-    home_team_score = 0
-    away_team_score = 0
-    current_timestamp = 0
-    text = f"{home_team} {home_team_score} - {away_team_score} {away_team}"
-    all_sorted_timestamps = sorted(home_team_timestamps + away_team_timestamps)
-    videos_with_text = []
-    for timestamp in all_sorted_timestamps:
-        duration = timestamp - current_timestamp
-        text_clip = (
-            TextClip(text, fontsize=30, font="../fonts/font.ttf" color="blue", font="Arial")
-            .set_position(("center", "bottom"))
-            .set_duration(duration)
-        )
-        video_with_text = CompositeVideoClip([video.subclip(current_timestamp, timestamp), text_clip])
-        if timestamp in home_team_timestamps:
-            home_team_score += 1
-        elif timestamp in away_team_timestamps:
-            away_team_score += 1
-        text += f"\n{home_team} {home_team_score} - {away_team_score} {away_team}"
-        videos_with_text.append(video_with_text)
-        current_timestamp = timestamp
-
-    final_video = concatenate_videoclips(videos_with_text)
-    final_video.write_videofile(output_path, codec="libx264", fps=24)
-
-
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
@@ -157,7 +122,7 @@ def rename_videos(directory_name, ordered_teams_including_refs):
         
 
 
-def run(directory_name, ordered_teams_including_refs, home_team_timestamps=None, away_team_timestamps=None):
+def run(directory_name, ordered_teams_including_refs):
     # Rename the videos in the directory
     rename_videos(directory_name, ordered_teams_including_refs)
 
