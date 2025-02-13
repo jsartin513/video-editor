@@ -4,3 +4,4 @@
 lib
 bin
 /scripts/__pycache__
+/scripts/utils/__pycache__
