@@ -43,7 +43,7 @@ def add_team_name_to_video(filename, home_team, away_team):
 
     video_with_text.write_videofile(output_path, codec="libx264", fps=24)
 
-add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
+# add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
 
 
@@ -77,8 +77,45 @@ def create_opening_screen(home_team, away_team):
     opening_screen = CompositeVideoClip([background_image, home_team_clip, home_team_logo_clip, away_team_clip, away_team_logo_clip])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
-create_opening_screen("Kids Next Door", "Boston T Titans")
+# create_opening_screen("Kids Next Door", "Boston T Titans")
 
+# returns: list of dictionaries with the home team and away team names
+def get_ordered_teams(court_number):
+    all_teams_including_refs = []
+    if court_number == 1:
+        all_teams_including_refs = ROUND_ROBIN_COURT_1_TEAMS
+    elif court_number == 2:
+        all_teams_including_refs = ROUND_ROBIN_COURT_2_TEAMS
+    elif court_number == 3:
+        all_teams_including_refs = ROUND_ROBIN_COURT_3_TEAMS
+    
+    ordered_teams = []
+    for i in range(0, len(all_teams_including_refs), 3):
+        ordered_teams.append({
+            "home_team": all_teams_including_refs[i],
+            "away_team": all_teams_including_refs[i + 1]
+        })
+    return ordered_teams
+
+# returns: list of dictionaries with the home team and away team names and the logo paths for each
+def get_ordered_teams_with_logo_paths(court_number):
+    ordered_teams = get_ordered_teams(court_number)
+    ordered_teams_with_logo_paths = []
+    for matchup in ordered_teams:
+        home_team = matchup["home_team"]
+        away_team = matchup["away_team"]
+        home_team_logo_path = get_logo_path(home_team) # TODO: There's only 12 teams, we don't need to keep getting the logo path
+        away_team_logo_path = get_logo_path(away_team)
+        ordered_teams_with_logo_paths.append({
+            "home_team": home_team,
+            "away_team": away_team,
+            "home_team_logo_path": home_team_logo_path,
+            "away_team_logo_path": away_team_logo_path
+        })
+    return ordered_teams_with_logo_paths
+
+
+    
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
