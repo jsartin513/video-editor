@@ -6,7 +6,8 @@ from moviepy.video.io.VideoFileClip import VideoFileClip
 from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy import *
 
-import subprocess
+from utils.files import get_video_length, list_files_sorted_by_date
+
 
 
 ROUND_ROBIN_COURT_1_TEAMS = ["home1", "away1", "ref1", "home2", "away2", "ref2", "home3", "away3", "ref3", "home4", "away4", "ref4", "home5", "away5", "ref5", "home6", "away6", "ref6"]
@@ -18,18 +19,9 @@ FONT_PATH = "./font/font.ttf"
 def log(message):
     print(message)
 
-# Get the length of a video in seconds
-# filename: the name of the video file
-# returns: the length of the video in seconds
-# Credit: https://stackoverflow.com/questions/3844430/how-to-get-the-duration-of-a-video-in-python
-# Uses bash for speed
-def get_video_length(filename):
-    result = subprocess.run(["ffprobe", "-v", "error", "-show_entries",
-                             "format=duration", "-of",
-                             "default=noprint_wrappers=1:nokey=1", filename],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT)
-    return float(result.stdout)
+def get_logo_path(team_name):
+    updated_team_name = team_name.replace(" ", "_").lower()
+    return f"static/{updated_team_name}_logo.png"
 
 # Add the team names to stylized panels in the video
 def add_team_name_to_video(filename, home_team, away_team):
@@ -37,12 +29,12 @@ def add_team_name_to_video(filename, home_team, away_team):
     text = f"{home_team} vs. {away_team}"
     video = VideoFileClip(filename)
     home_team_clip = (
-    TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", margin=(0, 0, 200, 0))
+    TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", bg_color="yellow")
     .with_position((1800, 2200))
     .with_duration(video.duration)
     )
     away_team_clip = (
-    TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", margin=(200, 0, 0, 0))
+    TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow")
     .with_position((1200, 2200))
     .with_duration(video.duration)
     )
@@ -53,9 +45,7 @@ def add_team_name_to_video(filename, home_team, away_team):
 
 add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
-def get_logo_path(team_name):
-    updated_team_name = team_name.replace(" ", "_").lower()
-    return f"static/{updated_team_name}_logo.png"
+
 
 # This will create a video with the BDL logo in the background
 # The home team name will come in from the top left
@@ -123,20 +113,6 @@ def add_scores_to_video(filename, home_team, away_team, home_team_timestamps, aw
     final_video = concatenate_videoclips(videos_with_text)
     final_video.write_videofile(output_path, codec="libx264", fps=24)
 
-
-def list_files_sorted_by_date(directory):
-  """Lists files in a directory sorted by modification date.
-
-  Args:
-    directory: The path to the directory.
-
-  Returns:
-    A list of file names sorted by modification date (oldest to newest).
-  """
-  files = os.listdir(directory)
-  files_with_time = [(f, os.path.getctime(os.path.join(directory, f))) for f in files]
-  
-  return [f[0] for f in sorted(files_with_time, key=lambda x: x[1])]
 
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
