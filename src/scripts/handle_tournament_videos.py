@@ -7,7 +7,7 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy import *
 
 from utils.files import get_video_length, list_files_sorted_by_date
-from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
+from utils.google_sheet_reader import get_google_sheet_data, parse_schedule, get_logo_path
 
 
 
@@ -19,10 +19,6 @@ FONT_PATH = "./font/font.ttf"
 
 def log(message):
     print(message)
-
-def get_logo_path(team_name):
-    updated_team_name = team_name.replace(" ", "_").lower()
-    return f"static/{updated_team_name}_logo.png"
 
 # Add the team names to stylized panels in the video
 def add_team_name_to_video(filename, home_team, away_team):
