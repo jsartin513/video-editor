@@ -53,22 +53,38 @@ def add_team_name_to_video(filename, home_team, away_team):
 
 add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
+def get_logo_path(team_name):
+    updated_team_name = team_name.replace(" ", "_").lower()
+    return f"static/{updated_team_name}_logo.png"
+
 # This will create a video with the BDL logo in the background
 # The home team name will come in from the top left
 # And the away team name will come in from the bottom right
 # Until they meet in the center
 def create_opening_screen(home_team, away_team):
+    home_team_logo_path = get_logo_path(home_team)
+    away_team_logo_path = get_logo_path(away_team)
+
     background_image = ImageClip("static/bdl_rectangle_logo.png").with_duration(10)
+
     output_path = f"{home_team}_vs_{away_team}__opening_screen.mp4"
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=72, color="black", duration=10)
-        .with_position((0.3, 0.3), relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_position((0.3, 0.35), relative=True).with_effects([vfx.CrossFadeIn(3)])
+    )
+    home_team_logo_clip = (
+        ImageClip(home_team_logo_path, duration=10).resized(width=200)
+        .with_position((0.2, 0.3), relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_clip = (
         TextClip(font=FONT_PATH, text=away_team, font_size=72, color="black", duration=7)
-        .with_position((0.5, 0.5), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
+        .with_position((0.5, 0.55), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
     )
-    opening_screen = CompositeVideoClip([background_image, home_team_clip, away_team_clip])
+    away_team_logo_clip = (
+        ImageClip(away_team_logo_path, duration=7).resized(width=200)
+        .with_position((0.4, 0.5), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
+    )
+    opening_screen = CompositeVideoClip([background_image, home_team_clip, home_team_logo_clip, away_team_clip, away_team_logo_clip])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 create_opening_screen("Kids Next Door", "Boston T Titans")
