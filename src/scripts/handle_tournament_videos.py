@@ -7,6 +7,7 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy import *
 
 from utils.files import get_video_length, list_files_sorted_by_date
+from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
 
 
 
@@ -165,17 +166,16 @@ def run(directory_name, ordered_teams_including_refs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
-    parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
+    # parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
     parser.add_argument('--court', type=int, help='The court number', default=1)
     parser.add_argument('--round_type', type=str, help='The type of round (round_robin, playoffs, finals)', default='round_robin')
     parser.add_argument('--min_video_length', type=int, help='The minimum length of a video in seconds', default=300)
     args = parser.parse_args()
 
-    directory_name = args.directory_name
-    if args.court == 1:
-        ordered_teams_including_refs = ROUND_ROBIN_COURT_1_TEAMS
-    elif args.court == 2:
-        ordered_teams_including_refs = ROUND_ROBIN_COURT_2_TEAMS
-    elif args.court == 3:
-        ordered_teams_including_refs = ROUND_ROBIN_COURT_3_TEAMS
-    run(directory_name, ordered_teams_including_refs)
+    # directory_name = args.directory_name
+    sheet_data = get_google_sheet_data()
+    ordered_teams = parse_schedule(sheet_data)
+    
+    log(f"Ordered teams: {ordered_teams}")
+
+    # run(directory_name, ordered_teams)
