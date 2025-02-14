@@ -76,84 +76,41 @@ def create_opening_screen(home_team, away_team):
 
 # create_opening_screen("Kids Next Door", "Boston T Titans")
 
-# returns: list of dictionaries with the home team and away team names
-def get_ordered_teams(court_number):
-    all_teams_including_refs = []
-    if court_number == 1:
-        all_teams_including_refs = ROUND_ROBIN_COURT_1_TEAMS
-    elif court_number == 2:
-        all_teams_including_refs = ROUND_ROBIN_COURT_2_TEAMS
-    elif court_number == 3:
-        all_teams_including_refs = ROUND_ROBIN_COURT_3_TEAMS
-    
-    ordered_teams = []
-    for i in range(0, len(all_teams_including_refs), 3):
-        ordered_teams.append({
-            "home_team": all_teams_including_refs[i],
-            "away_team": all_teams_including_refs[i + 1]
-        })
-    return ordered_teams
-
-# returns: list of dictionaries with the home team and away team names and the logo paths for each
-def get_ordered_teams_with_logo_paths(court_number):
-    ordered_teams = get_ordered_teams(court_number)
-    ordered_teams_with_logo_paths = []
-    for matchup in ordered_teams:
-        home_team = matchup["home_team"]
-        away_team = matchup["away_team"]
-        home_team_logo_path = get_logo_path(home_team) # TODO: There's only 12 teams, we don't need to keep getting the logo path
-        away_team_logo_path = get_logo_path(away_team)
-        ordered_teams_with_logo_paths.append({
-            "home_team": home_team,
-            "away_team": away_team,
-            "home_team_logo_path": home_team_logo_path,
-            "away_team_logo_path": away_team_logo_path
-        })
-    return ordered_teams_with_logo_paths
-
-
-    
-
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
 # ordered_teams_including_refs: a list of teams in the order they appear in the video
-def rename_videos(directory_name, ordered_teams_including_refs):
-    # The list of teams will include the home team, away team, and ref
-    # We only care about the home team and away team for each game
-    # For each video in the directory, ordered by timestamp, if the video is at least 5 minutes long,
-    # We will rename it to the following format: "Home Team vs. Away Team.mp4"
-    # If the video is less than 5 minutes long, we will ignore it
-    home_team_index = 0
+def rename_videos(directory_name, games_list):
     output_directory = f'{directory_name}/processed_videos'
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
+    videos = get_likely_ordered_game_filenames(directory_name)
+    video_paths = []
+    for idx, video in enumerate(videos):
+        game = games_list[idx]
+        home_team = game["home_team"]
+        away_team = game["away_team"]
+        new_video_name = f"{home_team}_{away_team}_round_robin.mp4"
+        new_video_path = os.path.join(output_directory, new_video_name)
+        old_video_path = os.path.join(directory_name, video)
+        shutil.copy(old_video_path, new_video_path)
+        log(f"Copied {video} with creation time {video} to {new_video_path}")
+        game["video_path"] = new_video_path
+        video_paths.append(new_video_path)
+    return video_paths
+
+
+# Pull all videos in the directory greater than five minutes long
+def get_likely_ordered_game_filenames(directory_name):
+    game_video_filenames = []
     for video in list_files_sorted_by_date(directory_name):
         if video.endswith(".mp4"):
             video_path = os.path.join(directory_name, video)
-            # Get the length of the video
-            # If the video is at least 5 minutes long, rename it
-            # Otherwise, ignore it
             video_length = get_video_length(video_path)
             if video_length >= 300:
-                # Get the home team and away team
-                home_team = ordered_teams_including_refs[home_team_index]
-                away_team = ordered_teams_including_refs[home_team_index + 1]
-                home_team_index += 3
-                new_video_name = f"{home_team}_{away_team}_round_robin.mp4"
-                new_video_path = os.path.join(output_directory, new_video_name)
-                shutil.copy(video_path, new_video_path)
-                log(f"Copied {video} to {new_video_path}")
-
-
-                # # Add the team names to the video
-                # add_team_name_to_video(new_video_path, home_team, away_team)
-                # log(f"Added team names to {new_video_name}")
-            else:
-                log(f"Ignoring {video} because it is too short to be a matchup")
-        else:
-            log(f"Ignoring {video}")
-        
+                game_video_filenames.append(video)
+    log(f"Game video filenames: {game_video_filenames}")
+    return game_video_filenames
 
 
 def run(directory_name, ordered_teams_including_refs):
@@ -162,20 +119,22 @@ def run(directory_name, ordered_teams_including_refs):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
-    # parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
-    # parser.add_argument('--court', type=int, help='The court number', default=1)
-    parser.add_argument('--round_type', type=str, help='The type of round (round_robin, playoffs, finals)', default='round_robin')
-    parser.add_argument('--min_video_length', type=int, help='The minimum length of a video in seconds', default=300)
+    parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
+    parser.add_argument('--court', type=int, help='The court number')
+    # parser.add_argument('--round_type', type=str, help='The type of round (round_robin, playoffs, finals)', default='round_robin')
+    # parser.add_argument('--min_video_length', type=int, help='The minimum length of a video in seconds', default=300)
     args = parser.parse_args()
 
     # directory_name = args.directory_name
     sheet_data = get_google_sheet_data()
     schedule = parse_schedule(sheet_data)
 
-    for court_number in range(1, 4):
-        court_name = f"Court {court_number}"
-        ordered_teams = schedule[court_name]
-        log(f"Ordered teams for {court_name}: {ordered_teams}")
+    # for court_number in range(1, 4):
+    court_name = f"Court {args.court}"
+    ordered_games = schedule[court_name]
+
+    video_paths =rename_videos(args.directory_name, ordered_games)
+
     
     # log(f"Ordered teams: {ordered_teams}")
 

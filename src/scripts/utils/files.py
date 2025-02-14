@@ -26,5 +26,7 @@ def list_files_sorted_by_date(directory):
   """
   files = os.listdir(directory)
   files_with_time = [(f, os.path.getctime(os.path.join(directory, f))) for f in files]
+
+  print(f"Files with time: {sorted(files_with_time, key=lambda x: x[1])}")
   
   return [f[0] for f in sorted(files_with_time, key=lambda x: x[1])]
