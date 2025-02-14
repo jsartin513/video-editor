@@ -10,7 +10,7 @@ COURT_3_HEADER_TEXT = "Court 3"
 
 def get_logo_path(team_name):
     updated_team_name = team_name.replace(" ", "_").replace(",", "").replace("'", "").lower()
-    return f"static/{updated_team_name}_logo.png"
+    return f"src/static/{updated_team_name}_logo.png"
 
 
 def get_google_sheet_data():

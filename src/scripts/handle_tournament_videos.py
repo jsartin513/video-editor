@@ -7,18 +7,16 @@ from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 from moviepy import *
 
 from utils.files import get_video_length, list_files_sorted_by_date
-from utils.google_sheet_reader import get_google_sheet_data, parse_schedule, get_logo_path
+from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
 
-
-
-ROUND_ROBIN_COURT_1_TEAMS = ["home1", "away1", "ref1", "home2", "away2", "ref2", "home3", "away3", "ref3", "home4", "away4", "ref4", "home5", "away5", "ref5", "home6", "away6", "ref6"]
-ROUND_ROBIN_COURT_2_TEAMS = []
-ROUND_ROBIN_COURT_3_TEAMS = []
 
 FONT_PATH = "./font/font.ttf"
 
 def log(message):
     print(message)
+
+def format_team_name_for_filename(team_name):
+    return team_name.replace(" ", "_").replace(",", "").replace("'", "").lower()
 
 # Add the team names to stylized panels in the video
 def add_team_name_to_video(filename, home_team, away_team):
@@ -48,13 +46,15 @@ def add_team_name_to_video(filename, home_team, away_team):
 # The home team name will come in from the top left
 # And the away team name will come in from the bottom right
 # Until they meet in the center
-def create_opening_screen(home_team, away_team):
-    home_team_logo_path = get_logo_path(home_team)
-    away_team_logo_path = get_logo_path(away_team)
+def create_opening_screen(output_directory, game):
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    home_team_logo_path = game["home_team_logo_path"]
+    away_team_logo_path = game["away_team_logo_path"]
+    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
-    background_image = ImageClip("static/bdl_rectangle_logo.png").with_duration(10)
+    background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(10)
 
-    output_path = f"{home_team}_vs_{away_team}__opening_screen.mp4"
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=72, color="black", duration=10)
         .with_position((0.3, 0.35), relative=True).with_effects([vfx.CrossFadeIn(3)])
@@ -94,7 +94,7 @@ def rename_videos(directory_name, games_list):
         new_video_path = os.path.join(output_directory, new_video_name)
         old_video_path = os.path.join(directory_name, video)
         shutil.copy(old_video_path, new_video_path)
-        log(f"Copied {video} with creation time {video} to {new_video_path}")
+        log(f"Copied {video} to {new_video_path}")
         game["video_path"] = new_video_path
         video_paths.append(new_video_path)
     return video_paths
@@ -134,6 +134,13 @@ if __name__ == '__main__':
     ordered_games = schedule[court_name]
 
     video_paths =rename_videos(args.directory_name, ordered_games)
+    output_path = f"{args.directory_name}/processed_videos/opening_screens"
+
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+
+    for game in ordered_games:
+        create_opening_screen(output_path, game)
 
     
     # log(f"Ordered teams: {ordered_teams}")
