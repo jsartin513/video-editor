@@ -41,14 +41,14 @@ def add_team_name_to_video(filename, home_team, away_team):
 # add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
 
-LOGO_ICON_MAX_WIDTH = 200
+LOGO_ICON_MAX_WIDTH = 180
 TEAM_NAME_MAX_FONT_SIZE = 72
-STARTING_HOME_LOGO_POSITION = (0.1, 0.2)
-STARTING_HOME_TEAM_NAME_POSITION = (0.2, 0.25)
+STARTING_HOME_LOGO_POSITION = (0.11, 0.2)
+STARTING_HOME_TEAM_NAME_POSITION = (0.205, 0.25)
 
 
 # Create a circular mask
-def circular_mask():
+def get_circular_mask():
     center_x, center_y = LOGO_ICON_MAX_WIDTH // 2, LOGO_ICON_MAX_WIDTH // 2
     width, height = LOGO_ICON_MAX_WIDTH, LOGO_ICON_MAX_WIDTH
     radius = min(width, height) // 2
@@ -70,7 +70,7 @@ def create_opening_screen(output_directory, game):
 
     background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(10)
     
-    circular_mask = circular_mask()
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
 
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     ordered_games = schedule[court_name]
 
     # video_paths =rename_videos(args.directory_name, ordered_games)
-    # output_path = f"{args.directory_name}/processed_videos/opening_screens"
+    output_path = f"{args.directory_name}/processed_videos/opening_screens"
 
     # if not os.path.exists(output_path):
     #     os.makedirs(output_path)
