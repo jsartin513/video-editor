@@ -41,6 +41,11 @@ def add_team_name_to_video(filename, home_team, away_team):
 # add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
 
+LOGO_ICON_MAX_WIDTH = 200
+TEAM_NAME_MAX_FONT_SIZE = 72
+STARTING_HOME_LOGO_POSITION = (0.1, 0.2)
+STARTING_HOME_TEAM_NAME_POSITION = (0.2, 0.25)
+
 
 # This will create a video with the BDL logo in the background
 # The home team name will come in from the top left
@@ -56,19 +61,19 @@ def create_opening_screen(output_directory, game):
     background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(10)
 
     home_team_clip = (
-        TextClip(font=FONT_PATH, text=home_team, font_size=72, color="black", duration=10)
-        .with_position((0.3, 0.35), relative=True).with_effects([vfx.CrossFadeIn(3)])
+        TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
+        .with_position(STARTING_HOME_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     home_team_logo_clip = (
-        ImageClip(home_team_logo_path, duration=10).resized(width=200)
-        .with_position((0.2, 0.3), relative=True).with_effects([vfx.CrossFadeIn(3)])
+        ImageClip(home_team_logo_path, duration=10).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_position(STARTING_HOME_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_clip = (
-        TextClip(font=FONT_PATH, text=away_team, font_size=72, color="black", duration=7)
+        TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=7)
         .with_position((0.5, 0.55), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_logo_clip = (
-        ImageClip(away_team_logo_path, duration=7).resized(width=200)
+        ImageClip(away_team_logo_path, duration=7).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_position((0.4, 0.5), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
     )
     opening_screen = CompositeVideoClip([background_image, home_team_clip, home_team_logo_clip, away_team_clip, away_team_logo_clip])
@@ -139,9 +144,10 @@ if __name__ == '__main__':
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    for game in ordered_games:
-        create_opening_screen(output_path, game)
 
+    # for game in ordered_games:
+    #     create_opening_screen(output_path, game)
+    create_opening_screen(output_path, ordered_games[0])
     
     # log(f"Ordered teams: {ordered_teams}")
 
