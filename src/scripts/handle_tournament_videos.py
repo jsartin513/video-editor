@@ -79,11 +79,11 @@ def create_opening_screen(output_directory, game):
 
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
-        .with_position(lambda t: ((ENDING_HOME_TEAM_LOGO_POSITION - STARTING_LOGO_POSITION) * t + STARTING_LOGO_POSITION), relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_position(lambda t: (0.205 + t * 0.01, 0.25 + t * 0.02), relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     home_team_logo_clip = (
         ImageClip(home_team_logo_path, duration=10).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_mask(circular_mask).with_position(lambda t: (0.11 + t * 0.01, 0.2 + t * 0.02), relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_clip = (
         TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=7)
