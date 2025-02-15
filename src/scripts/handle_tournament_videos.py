@@ -47,6 +47,16 @@ STARTING_HOME_LOGO_POSITION = (0.1, 0.2)
 STARTING_HOME_TEAM_NAME_POSITION = (0.2, 0.25)
 
 
+# Create a circular mask
+def circular_mask():
+    center_x, center_y = LOGO_ICON_MAX_WIDTH // 2, LOGO_ICON_MAX_WIDTH // 2
+    width, height = LOGO_ICON_MAX_WIDTH, LOGO_ICON_MAX_WIDTH
+    radius = min(width, height) // 2
+    mask = np.zeros((height, width)) 
+    x, y = np.ogrid[:height, :width]
+    mask[(x - center_y)**2 + (y - center_x)**2 <= radius**2] = 1  
+    return mask
+
 # This will create a video with the BDL logo in the background
 # The home team name will come in from the top left
 # And the away team name will come in from the bottom right
@@ -59,6 +69,8 @@ def create_opening_screen(output_directory, game):
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
     background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(10)
+    
+    circular_mask = circular_mask()
 
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
@@ -66,7 +78,7 @@ def create_opening_screen(output_directory, game):
     )
     home_team_logo_clip = (
         ImageClip(home_team_logo_path, duration=10).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_position(STARTING_HOME_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_mask(circular_mask).with_position(STARTING_HOME_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_clip = (
         TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=7)
@@ -138,11 +150,11 @@ if __name__ == '__main__':
     court_name = f"Court {args.court}"
     ordered_games = schedule[court_name]
 
-    video_paths =rename_videos(args.directory_name, ordered_games)
-    output_path = f"{args.directory_name}/processed_videos/opening_screens"
+    # video_paths =rename_videos(args.directory_name, ordered_games)
+    # output_path = f"{args.directory_name}/processed_videos/opening_screens"
 
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    # if not os.path.exists(output_path):
+    #     os.makedirs(output_path)
 
 
     # for game in ordered_games:
