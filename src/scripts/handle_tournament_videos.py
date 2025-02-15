@@ -43,8 +43,13 @@ def add_team_name_to_video(filename, home_team, away_team):
 
 LOGO_ICON_MAX_WIDTH = 180
 TEAM_NAME_MAX_FONT_SIZE = 72
-STARTING_HOME_LOGO_POSITION = (0.11, 0.2)
-STARTING_HOME_TEAM_NAME_POSITION = (0.205, 0.25)
+STARTING_LOGO_POSITION = (0.11, 0.2)
+STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
+
+ENDING_AWAY_TEAM_LOGO_POSITION = (0.6, 0.9)
+ENDING_HOME_TEAM_LOGO_POSITION = (0.4, 0.9)
+ENDING_AWAY_TEAM_NAME_POSITION = (0.65, 0.9)
+ENDING_HOME_TEAM_NAME_POSITION = (0.45, 0.9)
 
 
 # Create a circular mask
@@ -74,11 +79,11 @@ def create_opening_screen(output_directory, game):
 
     home_team_clip = (
         TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
-        .with_position(STARTING_HOME_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_position(lambda t: ((ENDING_HOME_TEAM_LOGO_POSITION - STARTING_LOGO_POSITION) * t + STARTING_LOGO_POSITION), relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     home_team_logo_clip = (
         ImageClip(home_team_logo_path, duration=10).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(STARTING_HOME_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
+        .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(3)])
     )
     away_team_clip = (
         TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=7)
