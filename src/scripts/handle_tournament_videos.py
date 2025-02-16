@@ -100,7 +100,7 @@ def get_home_team_name_clips(home_team_name):
         .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME)
     )
     home_team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=final_position_start)
+        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
         .with_position(ENDING_HOME_TEAM_NAME_POSITION, relative=True).with_start(final_position_start)
     )
     return home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position
