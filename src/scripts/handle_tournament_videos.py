@@ -72,21 +72,39 @@ def function_for_position(t, start_position, end_position, clip_duration=STANDAR
 
     return (x_start_position + x_distance * t / clip_duration, y_start_position + y_distance * t / clip_duration)
 
+
+
+
+
+
+
+
+
+
+
+def get_name_clips(team_name, start_position, end_position, start_time=0):
+    fade_in_clip_start = start_time
+    moving_clip_start = fade_in_clip_start + STANDARD_TRANSITION_TIME
+    final_position_start = fade_in_clip_start + STANDARD_TRANSITION_TIME * 2
+    team_clip_fade_in = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(start_position, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(fade_in_clip_start)
+    )
+    team_clip_moving = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(lambda t: function_for_position(t, start_position, end_position), relative=True).with_start(moving_clip_start)
+    )
+    team_clip_final_position = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
+        .with_position(end_position, relative=True).with_start(final_position_start)
+    )
+    return team_clip_fade_in, team_clip_moving, team_clip_final_position
+
 def get_home_team_name_clips(home_team_name):
-    final_position_start = STANDARD_TRANSITION_TIME * 2
-    home_team_clip_fade_in = (
-        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
-        .with_position(STARTING_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    )
-    home_team_clip_moving = (
-        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
-        .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME)
-    )
-    home_team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
-        .with_position(ENDING_HOME_TEAM_NAME_POSITION, relative=True).with_start(final_position_start)
-    )
-    return home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position
+    return get_name_clips(home_team_name, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
+
+def get_away_team_name_clips(away_team_name):
+    return get_name_clips(away_team_name, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION, STANDARD_TRANSITION_TIME)
 
 def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     fade_in_clip_start = start_time
@@ -106,21 +124,6 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
         .with_mask(circular_mask).with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
-
-def get_away_team_name_clips(away_team_name):
-    away_team_clip_fade_in = (
-        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
-        .with_position(STARTING_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(STANDARD_TRANSITION_TIME)
-    )
-    away_team_clip_moving = (
-        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
-        .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME * 2)
-    )
-    away_team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME * 3)
-        .with_position(ENDING_AWAY_TEAM_NAME_POSITION, relative=True).with_start(STANDARD_TRANSITION_TIME * 3)
-    )
-    return away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position
 
 # This is going to have static information about this tournament
 def get_bdl_tournament_banner():
@@ -143,9 +146,9 @@ def create_opening_screen(output_directory, game):
     
     tournament_banner = get_bdl_tournament_banner()
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_logo_clips(home_team_logo_path, ENDING_HOME_TEAM_LOGO_POSITION)
-    home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_home_team_name_clips(home_team)
+    home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_name_clips(home_team, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
     away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_logo_clips(away_team_logo_path, ENDING_AWAY_TEAM_LOGO_POSITION, STANDARD_TRANSITION_TIME)
-    away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_away_team_name_clips(away_team)
+    away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_name_clips(away_team, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION, STANDARD_TRANSITION_TIME)
  
     opening_screen = CompositeVideoClip([
         background_image,tournament_banner,  home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
