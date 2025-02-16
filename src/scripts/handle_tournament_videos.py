@@ -147,29 +147,12 @@ def create_opening_screen(output_directory, game):
 
     background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(TOTAL_DURATION)
     
-    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
 
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_home_team_logo_clips(home_team_logo_path)
     home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_home_team_name_clips(home_team)
     away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_away_team_logo_clips(away_team_logo_path)
     away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_away_team_name_clips(away_team)
-    # away_team_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2
-    # away_team_logo_clip_fade_in = (
-    #     ImageClip(away_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-    #     .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_start(away_team_start_time).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    # )
-    # away_team_logo_clip_moving = (
-    #     ImageClip(away_team_logo_path, duration=TOTAL_DURATION - away_team_start_time - STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-    #     .with_mask(circular_mask).with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ENDING_AWAY_TEAM_LOGO_POSITION), relative=True).with_start(away_team_start_time + STANDARD_TRANSITION_TIME)
-    # )   
-    # away_team_clip = (
-    #     TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME) 
-    #     .with_position((0.5, 0.55), relative=True).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    # )
-    # away_team_logo_clip = (
-    #     ImageClip(away_team_logo_path, duration=7).resized(width=LOGO_ICON_MAX_WIDTH)
-    #     .with_position((0.4, 0.5), relative=True).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    # )
+ 
     opening_screen = CompositeVideoClip([
         background_image, home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
         home_team_clip_final_position, 
