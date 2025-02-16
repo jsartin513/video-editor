@@ -142,7 +142,7 @@ def create_opening_screen(output_directory, game):
     away_team_logo_path = game["away_team_logo_path"]
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
-    background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(TOTAL_DURATION).with_opacity(0.5)
+    background_image = ImageClip("src/static/grayscale_bdl_logo.png").with_duration(TOTAL_DURATION).with_opacity(0.1)
     
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
 
