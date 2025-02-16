@@ -40,18 +40,6 @@ def add_team_name_to_video(filename, home_team, away_team):
 
 # add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
 
-
-LOGO_ICON_MAX_WIDTH = 180
-TEAM_NAME_MAX_FONT_SIZE = 72
-STARTING_LOGO_POSITION = (0.11, 0.2)
-STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
-
-ENDING_AWAY_TEAM_LOGO_POSITION = (0.6, 0.9)
-ENDING_HOME_TEAM_LOGO_POSITION = (0.4, 0.9)
-ENDING_AWAY_TEAM_NAME_POSITION = (0.65, 0.9)
-ENDING_HOME_TEAM_NAME_POSITION = (0.45, 0.9)
-
-
 # Create a circular mask
 def get_circular_mask():
     center_x, center_y = LOGO_ICON_MAX_WIDTH // 2, LOGO_ICON_MAX_WIDTH // 2
@@ -62,10 +50,86 @@ def get_circular_mask():
     mask[(x - center_y)**2 + (y - center_x)**2 <= radius**2] = 1  
     return mask
 
-# This will create a video with the BDL logo in the background
-# The home team name will come in from the top left
-# And the away team name will come in from the bottom right
-# Until they meet in the center
+LOGO_ICON_MAX_WIDTH = 180
+TEAM_NAME_MAX_FONT_SIZE = 72
+STARTING_LOGO_POSITION = (0.11, 0.2)
+STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
+
+ENDING_AWAY_TEAM_LOGO_POSITION = (0.5, 0.8)
+ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
+ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
+ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
+
+TOTAL_DURATION = 15
+STANDARD_TRANSITION_TIME = 3
+
+# Create a function that takes in a time t and returns the position of an object moving from start_position to end_position
+def function_for_position(t, start_position, end_position):
+    return (start_position[0] + t * (end_position[0] - start_position[0]), start_position[1] + t * (end_position[1] - start_position[1]))
+
+def get_home_team_logo_clips(home_team_logo_path):
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    home_team_logo_clip_fade_in = (
+        ImageClip(home_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    home_team_logo_clip_moving = (
+        ImageClip(home_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ENDING_HOME_TEAM_LOGO_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME)
+    )
+    home_team_logo_final_position = (
+        ImageClip(home_team_logo_path, duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(ENDING_HOME_TEAM_LOGO_POSITION, relative=True).with_start(STANDARD_TRANSITION_TIME * 2)
+        )
+    return home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position
+
+def get_home_team_name_clips(home_team_name):
+    home_team_clip_fade_in = (
+        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(STARTING_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    home_team_clip_moving = (
+        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME)
+    )
+    home_team_clip_final_position = (
+        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
+        .with_position(ENDING_HOME_TEAM_NAME_POSITION, relative=True).with_start(STANDARD_TRANSITION_TIME * 2)
+    )
+    return home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position
+
+def get_away_team_logo_clips(away_team_logo_path):
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    away_team_logo_clip_fade_in = (
+        ImageClip(away_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(STANDARD_TRANSITION_TIME)
+    )
+    away_team_logo_clip_moving = (
+        ImageClip(away_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ENDING_AWAY_TEAM_LOGO_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME * 2)
+    )
+    away_team_logo_final_position = (
+        ImageClip(away_team_logo_path, duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME * 3).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(ENDING_AWAY_TEAM_LOGO_POSITION, relative=True).with_start(STANDARD_TRANSITION_TIME * 3)
+    )
+    return away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position
+
+def get_away_team_name_clips(away_team_name):
+    away_team_clip_fade_in = (
+        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(STARTING_TEAM_NAME_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(STANDARD_TRANSITION_TIME)
+    )
+    away_team_clip_moving = (
+        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=STANDARD_TRANSITION_TIME)
+        .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME * 2)
+    )
+    away_team_clip_final_position = (
+        TextClip(font=FONT_PATH, text=away_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME * 3)
+        .with_position(ENDING_AWAY_TEAM_NAME_POSITION, relative=True).with_start(STANDARD_TRANSITION_TIME * 3)
+    )
+    return away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position
+
+# Create opening screen with "standard" transitions using the variables described above
 def create_opening_screen(output_directory, game):
     home_team = game["home_team"]
     away_team = game["away_team"]
@@ -73,27 +137,35 @@ def create_opening_screen(output_directory, game):
     away_team_logo_path = game["away_team_logo_path"]
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
-    background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(10)
+    background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(TOTAL_DURATION)
     
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
 
-    home_team_clip = (
-        TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=10)
-        .with_position(lambda t: (0.205 + t * 0.01, 0.25 + t * 0.02), relative=True).with_effects([vfx.CrossFadeIn(3)])
-    )
-    home_team_logo_clip = (
-        ImageClip(home_team_logo_path, duration=10).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(lambda t: (0.11 + t * 0.01, 0.2 + t * 0.02), relative=True).with_effects([vfx.CrossFadeIn(3)])
-    )
-    away_team_clip = (
-        TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=7)
-        .with_position((0.5, 0.55), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
-    )
-    away_team_logo_clip = (
-        ImageClip(away_team_logo_path, duration=7).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_position((0.4, 0.5), relative=True).with_start(3).with_effects([vfx.CrossFadeIn(3)])
-    )
-    opening_screen = CompositeVideoClip([background_image, home_team_clip, home_team_logo_clip, away_team_clip, away_team_logo_clip])
+    home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_home_team_logo_clips(home_team_logo_path)
+    home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_home_team_name_clips(home_team)
+    away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_away_team_logo_clips(away_team_logo_path)
+    away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_away_team_name_clips(away_team)
+    # away_team_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2
+    # away_team_logo_clip_fade_in = (
+    #     ImageClip(away_team_logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+    #     .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_start(away_team_start_time).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    # )
+    # away_team_logo_clip_moving = (
+    #     ImageClip(away_team_logo_path, duration=TOTAL_DURATION - away_team_start_time - STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
+    #     .with_mask(circular_mask).with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ENDING_AWAY_TEAM_LOGO_POSITION), relative=True).with_start(away_team_start_time + STANDARD_TRANSITION_TIME)
+    # )   
+    # away_team_clip = (
+    #     TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - STANDARD_TRANSITION_TIME) 
+    #     .with_position((0.5, 0.55), relative=True).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    # )
+    # away_team_logo_clip = (
+    #     ImageClip(away_team_logo_path, duration=7).resized(width=LOGO_ICON_MAX_WIDTH)
+    #     .with_position((0.4, 0.5), relative=True).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    # )
+    opening_screen = CompositeVideoClip([
+        background_image, home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
+        home_team_clip_final_position, 
+        away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position, away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 # create_opening_screen("Kids Next Door", "Boston T Titans")
