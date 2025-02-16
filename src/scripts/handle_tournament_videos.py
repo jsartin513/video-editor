@@ -100,7 +100,7 @@ def get_home_team_name_clips(home_team_name):
         .with_position(lambda t: function_for_position(t, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION), relative=True).with_start(STANDARD_TRANSITION_TIME)
     )
     home_team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=final_position_start)
+        TextClip(font=FONT_PATH, text=home_team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
         .with_position(ENDING_HOME_TEAM_NAME_POSITION, relative=True).with_start(final_position_start)
     )
     return home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position
@@ -137,6 +137,15 @@ def get_away_team_name_clips(away_team_name):
     )
     return away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position
 
+# This is going to have static information about this tournament
+def get_bdl_tournament_banner():
+    text = "Boston Dodgeball League presents The Throw Down 3 - February 22, 2025"
+    banner = (
+        TextClip(font=FONT_PATH, text=text, size=(1920, 24))
+        .with_position(("center", "top")).with_duration(TOTAL_DURATION)
+    )
+    return banner
+
 # Create opening screen with "standard" transitions using the variables described above
 def create_opening_screen(output_directory, game):
     home_team = game["home_team"]
@@ -147,14 +156,14 @@ def create_opening_screen(output_directory, game):
 
     background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(TOTAL_DURATION)
     
-
+    tournament_banner = get_bdl_tournament_banner()
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_home_team_logo_clips(home_team_logo_path)
     home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_home_team_name_clips(home_team)
     away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_away_team_logo_clips(away_team_logo_path)
     away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_away_team_name_clips(away_team)
  
     opening_screen = CompositeVideoClip([
-        background_image, home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
+        background_image,tournament_banner,  home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
         home_team_clip_final_position, 
         away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position, away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
