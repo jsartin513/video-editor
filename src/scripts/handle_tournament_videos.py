@@ -72,16 +72,7 @@ def function_for_position(t, start_position, end_position, clip_duration=STANDAR
 
     return (x_start_position + x_distance * t / clip_duration, y_start_position + y_distance * t / clip_duration)
 
-
-
-
-
-
-
-
-
-
-
+# Create clips for the team name with "standard" transitions using the variables described above
 def get_name_clips(team_name, start_position, end_position, start_time=0):
     fade_in_clip_start = start_time
     moving_clip_start = fade_in_clip_start + STANDARD_TRANSITION_TIME
@@ -100,12 +91,8 @@ def get_name_clips(team_name, start_position, end_position, start_time=0):
     )
     return team_clip_fade_in, team_clip_moving, team_clip_final_position
 
-def get_home_team_name_clips(home_team_name):
-    return get_name_clips(home_team_name, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
 
-def get_away_team_name_clips(away_team_name):
-    return get_name_clips(away_team_name, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION, STANDARD_TRANSITION_TIME)
-
+# Create clips for the logo with "standard" transitions using the variables described above
 def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     fade_in_clip_start = start_time
     moving_clip_start = fade_in_clip_start + STANDARD_TRANSITION_TIME
@@ -151,9 +138,21 @@ def create_opening_screen(output_directory, game):
     away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position = get_name_clips(away_team, STARTING_TEAM_NAME_POSITION, ENDING_AWAY_TEAM_NAME_POSITION, STANDARD_TRANSITION_TIME)
  
     opening_screen = CompositeVideoClip([
-        background_image,tournament_banner,  home_team_clip_fade_in, home_team_clip_moving, home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position, 
-        home_team_clip_final_position, 
-        away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position, away_team_clip_fade_in, away_team_clip_moving, away_team_clip_final_position])
+        background_image,
+        tournament_banner,
+        home_team_logo_clip_fade_in,
+        home_team_logo_clip_moving,
+        home_team_logo_final_position,
+        home_team_clip_fade_in,
+        home_team_clip_moving,
+        home_team_clip_final_position,
+        away_team_logo_clip_fade_in,
+        away_team_logo_clip_moving,
+        away_team_logo_final_position,
+        away_team_clip_fade_in,
+        away_team_clip_moving,
+        away_team_clip_final_position
+    ])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 # create_opening_screen("Kids Next Door", "Boston T Titans")
