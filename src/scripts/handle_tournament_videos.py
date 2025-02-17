@@ -220,10 +220,17 @@ def create_metadata_file(schedule, output_path, video_paths):
         json.dump(metadata, f)
     log(f"Metadata file created at {output_path}/metadata.json")
 
-def run(directory_name, ordered_games):
+def organize_video_files(directory_name, ordered_games):
     # Rename the videos in the directory
     output_path, video_paths = rename_videos(directory_name, ordered_games)
     create_metadata_file(ordered_games, output_path, video_paths)
+
+def process_game(output_path, game):
+    create_opening_screen(output_path, game)
+    # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
+
+    
+    
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
@@ -244,8 +251,8 @@ if __name__ == '__main__':
     # video_paths =rename_videos(args.directory_name, ordered_games)
     output_path = f"{args.directory_name}/processed_videos"
 
-    # if not os.path.exists(output_path):
-    #     os.makedirs(output_path)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     opening_screens_output_path = f"{output_path}/opening_screens"
     # for game in ordered_games:
@@ -254,4 +261,5 @@ if __name__ == '__main__':
     
     # log(f"Ordered teams: {ordered_teams}")
 
-    run(args.directory_name, ordered_games)
+    # organize_video_files(args.directory_name, ordered_games)
+    process_game(output_path, ordered_games[0]) # next steps: separate these scripts and read this from the metadata file
