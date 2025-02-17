@@ -170,36 +170,49 @@ def create_simple_opening_screen(output_directory, game):
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
+    home_team_match_score = "0-0-0"
+    away_team_match_score = "0-0-0"
+    
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
 
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
     header_font_size = 72
+    subheader_font_size = 60
     round_font_size = 48
 
     color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
-    header_text = "Boston Dodgeball League presents The Throw Down 3"
+    header_text = "Boston Dodgeball League"
+    sub_header_text = "The Throw Down 3"
     round_text = f"Round Robin Round {game['round']}"
 
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position((0.3, 0.3), relative=True).with_duration(TOTAL_DURATION)
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position((0.2, 0.2), relative=True).with_duration(TOTAL_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position((0.2, 0.3), relative=True).with_duration(TOTAL_DURATION)
     round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position((0.4, 0.4), relative=True).with_duration(TOTAL_DURATION)
 
 
-    home_team_logo_clip = ImageClip(home_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.4, 0.5), relative=True)
-    away_team_logo_clip = ImageClip(away_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.6, 0.5), relative=True)
+    home_team_logo_clip = ImageClip(home_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.1, 0.5), relative=True)
+    away_team_logo_clip = ImageClip(away_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.8, 0.5), relative=True)
 
-    home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color=text_color).with_position((0.4, 0.6), relative=True).with_duration(TOTAL_DURATION)
-    away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MAX_FONT_SIZE, color=text_color).with_position((0.6, 0.6), relative=True).with_duration(TOTAL_DURATION)
+    home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.6), relative=True).with_duration(TOTAL_DURATION)
+    away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.6), relative=True).with_duration(TOTAL_DURATION)
+
+    home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.7), relative=True).with_duration(TOTAL_DURATION)
+    away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.7), relative=True).with_duration(TOTAL_DURATION)
 
     opening_screen = CompositeVideoClip([
         color_background, 
         header_text_clip, 
+        sub_header_text_clip,
         round_text_clip,
         home_team_logo_clip,
         away_team_logo_clip,
         home_team_name_clip,
-        away_team_name_clip])
+        away_team_name_clip,
+        home_team_match_score_clip,
+        away_team_match_score_clip,
+        ])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 
