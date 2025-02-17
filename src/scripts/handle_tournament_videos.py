@@ -51,7 +51,10 @@ def get_circular_mask():
     return mask
 
 LOGO_ICON_MAX_WIDTH = 180
+LOGO_ICON_MIN_WIDTH = 120
 TEAM_NAME_MAX_FONT_SIZE = 72
+TEAM_NAME_MIN_FONT_SIZE = 36
+
 STARTING_LOGO_POSITION = (0.11, 0.2)
 STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
 
@@ -62,6 +65,9 @@ ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
 TOTAL_DURATION = 15
 STANDARD_TRANSITION_TIME = 3
+
+def function_for_size(t, start_size, end_size, clip_duration=STANDARD_TRANSITION_TIME):
+    return start_size + (end_size - start_size) * t / clip_duration
 
 # Create a function that takes in a time t and returns the position of an object moving from start_position to end_position
 def function_for_position(t, start_position, end_position, clip_duration=STANDARD_TRANSITION_TIME):
