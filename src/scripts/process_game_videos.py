@@ -187,19 +187,19 @@ def create_simple_opening_screen(output_directory, game):
     sub_header_text = "The Throw Down 3"
     round_text = f"Round Robin Round {game['round']}"
 
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position((0.2, 0.2), relative=True).with_duration(TOTAL_DURATION)
-    sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position((0.2, 0.3), relative=True).with_duration(TOTAL_DURATION)
-    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position((0.4, 0.4), relative=True).with_duration(TOTAL_DURATION)
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(TOTAL_DURATION)
 
 
-    home_team_logo_clip = ImageClip(home_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.1, 0.5), relative=True)
-    away_team_logo_clip = ImageClip(away_team_logo_path).with_duration(TOTAL_DURATION).with_position((0.8, 0.5), relative=True)
+    home_team_logo_clip = ImageClip(home_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.1, 0.6), relative=True)
+    away_team_logo_clip = ImageClip(away_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.8, 0.6), relative=True)
 
     home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.6), relative=True).with_duration(TOTAL_DURATION)
-    away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.6), relative=True).with_duration(TOTAL_DURATION)
+    away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.6), relative=True).with_duration(TOTAL_DURATION)
 
     home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.7), relative=True).with_duration(TOTAL_DURATION)
-    away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.7), relative=True).with_duration(TOTAL_DURATION)
+    away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.7), relative=True).with_duration(TOTAL_DURATION)
 
     opening_screen = CompositeVideoClip([
         color_background, 
