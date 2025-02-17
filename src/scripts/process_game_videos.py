@@ -4,6 +4,8 @@ import numpy as np
 
 import argparse
 
+from utils.utils import log, format_team_name_for_filename
+
 FONT_PATH = "./font/font.ttf"
 
 LOGO_ICON_MAX_WIDTH = 180
@@ -23,14 +25,6 @@ TOTAL_DURATION = 15
 STANDARD_TRANSITION_TIME = 3
 
 
-def log(message):
-    print(message)
-
-
-def format_team_name_for_filename(team_name):
-    return team_name.replace(" ", "_").replace(",", "").replace("'", "").lower()
-
-
 
 # Create a circular mask
 def get_circular_mask():
@@ -41,7 +35,6 @@ def get_circular_mask():
     x, y = np.ogrid[:height, :width]
     mask[(x - center_y)**2 + (y - center_x)**2 <= radius**2] = 1  
     return mask
-
 
 
 def function_for_size(t, start_size, end_size, clip_duration=STANDARD_TRANSITION_TIME):
@@ -126,6 +119,8 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
         .with_mask(circular_mask).with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
+
+
 # Create opening screen with "standard" transitions using the variables described above
 def create_opening_screen(output_directory, game):
     home_team = game["home_team"]
@@ -175,8 +170,6 @@ def run(output_path, games):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
     parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
-
-
     args = parser.parse_args()
 
     output_path = f"{args.directory_name}/processed_videos"

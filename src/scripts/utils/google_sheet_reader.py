@@ -56,11 +56,3 @@ def parse_schedule(csv_data, add_logo_paths=True):
                 schedule[COURT_3_HEADER_TEXT][-1]['away_team_logo_path'] = get_logo_path(row[COURT_3_HEADER_TEXT])
     
     return schedule
-
-
-
-
-# Example usage:
-# csv_data = get_google_sheet_data()
-# schedule = parse_schedule(csv_data)
-# print(schedule)
