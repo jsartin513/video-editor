@@ -8,6 +8,9 @@ from utils.utils import log, format_team_name_for_filename
 
 FONT_PATH = "./font/font.ttf"
 
+# BDL_LOGO_PATH = "src/static/grayscale_bdl_logo.png"
+BDL_LOGO_PATH = "src/static/bdl_rectangle_logo.png"
+
 LOGO_ICON_MAX_WIDTH = 180
 LOGO_ICON_MIN_WIDTH = 120
 TEAM_NAME_MAX_FONT_SIZE = 72
@@ -129,8 +132,12 @@ def create_opening_screen(output_directory, game):
     away_team_logo_path = game["away_team_logo_path"]
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
-    background_image = ImageClip("src/static/bdl_rectangle_logo.png").with_duration(TOTAL_DURATION)
-    
+    background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
+    # background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    # background_image_fading = ImageClip(BDL_LOGO_PATH).with_duration(STANDARD_TRANSITION_TIME).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeOut(STANDARD_TRANSITION_TIME)])
+    # game_video_fade_in = VideoFileClip(game["video_path"]).with_duration(13).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+
+
     tournament_banner = get_bdl_tournament_banner()
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_logo_clips(home_team_logo_path, ENDING_HOME_TEAM_LOGO_POSITION)
     home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_name_clips(home_team, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
@@ -139,6 +146,8 @@ def create_opening_screen(output_directory, game):
  
     opening_screen = CompositeVideoClip([
         background_image,
+        # background_image_fading,
+        # game_video_fade_in,
         tournament_banner,
         home_team_logo_clip_fade_in,
         home_team_logo_clip_moving,
