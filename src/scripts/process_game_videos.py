@@ -165,8 +165,32 @@ def create_opening_screen(output_directory, game):
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 
+def create_simple_opening_screen(output_directory, game):
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    home_team_logo_path = game["home_team_logo_path"]
+    away_team_logo_path = game["away_team_logo_path"]
+    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
+
+
+    background_color =  (0, 0, 255) #Dark blue
+    text_color = (255, 255, 255)
+    header_font_size = 72
+    round_font_size = 48
+
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    header_text = "Boston Dodgeball League presents The Throw Down 3"
+    round_text = f"Round Robin Round {game['round']}"
+
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position((0.3, 0.3), relative=True).with_duration(TOTAL_DURATION)
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position((0.4, 0.4), relative=True).with_duration(TOTAL_DURATION)
+
+    opening_screen = CompositeVideoClip([color_background, header_text_clip, round_text_clip])
+    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+
+
 def process_game(output_path, game):
-    create_opening_screen(output_path, game)
+    create_simple_opening_screen(output_path, game)
     # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
 
 
