@@ -135,7 +135,6 @@ def create_opening_screen(output_directory, game):
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
-    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
     background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
     # background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
@@ -167,8 +166,8 @@ def create_opening_screen(output_directory, game):
         away_team_clip_moving,
         away_team_clip_final_position
     ])
-    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
-
+    # opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+    return opening_screen
 
 def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
     duration = TOTAL_DURATION - start_time
@@ -212,7 +211,7 @@ def create_header_text_clips(header_text, subheader_text, round_text, text_color
     round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
     return header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
 
-def create_simple_opening_screen(output_directory, game):
+def create_simple_opening_screen(game):
     home_team = game["home_team"]
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
@@ -221,8 +220,6 @@ def create_simple_opening_screen(output_directory, game):
     away_team_match_score = "0-0-0"
     vs_text = "vs"
     
-    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
-
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
 
@@ -252,9 +249,9 @@ def create_simple_opening_screen(output_directory, game):
         away_team_match_score_clip,
         vs_clip
         ])
-    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+    return opening_screen
 
-def create_ending_screen(output_directory, game):
+def create_ending_screen(game):
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
 
@@ -291,15 +288,29 @@ def create_ending_screen(output_directory, game):
         home_team_match_score_clip_start,
         away_team_match_score_clip_start,
         ])
-    closing_screen.write_videofile(f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_closing_screen.mp4", codec="libx264", fps=24)
+    return closing_screen
 
 
     
 
 def process_game(output_path, game):
-    create_simple_opening_screen(output_path, game)
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    formatted_home_team = format_team_name_for_filename(home_team)
+    formatted_away_team = format_team_name_for_filename(away_team)
+
+    
+    opening_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_opening_screen.mp4"
+    closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
+
+    opening_screen = create_simple_opening_screen(game)
     # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
-    create_ending_screen(output_path, game)
+    closing_screen = create_ending_screen(game)
+
+
+    opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
+
+    closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
 
 
 def run(output_path, games):
