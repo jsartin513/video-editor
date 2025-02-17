@@ -2,34 +2,13 @@ import argparse
 import json
 import os
 import shutil
-from moviepy.video.VideoClip import *
-from moviepy.video.io.VideoFileClip import VideoFileClip
-from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
-from moviepy import *
 
 from utils.files import get_video_length, list_files_sorted_by_date
 from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
-
-
-FONT_PATH = "./font/font.ttf"
-
-def log(message):
-    print(message)
-
-def format_team_name_for_filename(team_name):
-    return team_name.replace(" ", "_").replace(",", "").replace("'", "").lower()
-
-
-# add_team_name_to_video("/Users/jessica.sartin/Movies/GoPro/bdl_open_gym_july_22_2024/test_videos/processed_videos/shorter_video.mp4", "team 1", "team 2")
-
-
-
-
-# create_opening_screen("Kids Next Door", "Boston T Titans")
+from utils.utils import log, format_team_name_for_filename
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
-# ordered_teams_including_refs: a list of teams in the order they appear in the video
 def rename_videos(directory_name, games_list):
     output_directory = f'{directory_name}/processed_videos'
     if not os.path.exists(output_directory):
@@ -87,20 +66,14 @@ def run(directory_name, ordered_games):
     # Rename the videos in the directory
     output_path, video_paths = rename_videos(directory_name, ordered_games)
     create_metadata_file(ordered_games, output_path, video_paths)
-
-
-    
     
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
     parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
     parser.add_argument('--court', type=int, help='The court number')
-    # parser.add_argument('--round_type', type=str, help='The type of round (round_robin, playoffs, finals)', default='round_robin')
-    # parser.add_argument('--min_video_length', type=int, help='The minimum length of a video in seconds', default=300)
     args = parser.parse_args()
 
-    # directory_name = args.directory_name
     sheet_data = get_google_sheet_data()
     schedule = parse_schedule(sheet_data)
 
@@ -115,6 +88,5 @@ if __name__ == '__main__':
         os.makedirs(output_path)
 
     opening_screens_output_path = f"{output_path}/opening_screens"
-
 
     run(args.directory_name, ordered_games)
