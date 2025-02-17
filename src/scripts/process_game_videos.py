@@ -202,7 +202,7 @@ def create_simple_opening_screen(output_directory, game):
     home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.25, 0.7), relative=True).with_duration(TOTAL_DURATION)
     away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.7), relative=True).with_duration(TOTAL_DURATION)
 
-    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.6), relative=True).with_duration(TOTAL_DURATION)
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_duration(TOTAL_DURATION)
 
     opening_screen = CompositeVideoClip([
         color_background, 
