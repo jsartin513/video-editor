@@ -1,4 +1,6 @@
 import json
+import math
+import random
 from moviepy import *
 import numpy as np
 
@@ -24,8 +26,11 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 15
-STANDARD_TRANSITION_TIME = 3
+TOTAL_DURATION = 10
+STANDARD_TRANSITION_TIME = 1.5
+
+HEADER_TEXT = "Boston Dodgeball League"
+SUBHEADER_TEXT = "The Throw Down 3"
 
 
 
@@ -165,9 +170,136 @@ def create_opening_screen(output_directory, game):
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 
+def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
+    duration = TOTAL_DURATION - start_time
+    # Add position based on which side it is (left or right)
+    if side == "left":
+        logo_position = (0.1, 0.6)
+        team_name_position = (0.25, 0.6)
+        match_score_position = (0.25, 0.7)
+    else:
+        logo_position = (0.8, 0.6)
+        team_name_position = (0.6, 0.6)
+        match_score_position = (0.6, 0.7)
+
+    # Create the logo clip
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    logo_clip = (
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(logo_position, relative=True)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
+    )
+    team_name_clip = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+        .with_position(team_name_position, relative=True).with_duration(duration)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
+    )
+    match_score_clip = (
+        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+        .with_position(match_score_position, relative=True).with_duration(duration - STANDARD_TRANSITION_TIME)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time + STANDARD_TRANSITION_TIME)
+    )
+    return logo_clip, team_name_clip, match_score_clip
+
+def create_header_text_clips(header_text, subheader_text, round_text, text_color):
+    header_font_size = 72
+    subheader_font_size = 60
+    round_font_size = 48
+
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
+    round_text_fade_in_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(STANDARD_TRANSITION_TIME).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
+    return header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
+
+def create_simple_opening_screen(output_directory, game):
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    home_team_logo_path = game["home_team_logo_path"]
+    away_team_logo_path = game["away_team_logo_path"]
+    home_team_match_score = "0-0-0"
+    away_team_match_score = "0-0-0"
+    vs_text = "vs"
+    
+    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
+
+    background_color =  (0, 0, 255) #Dark blue
+    text_color = (255, 255, 255)
+
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    header_text = HEADER_TEXT
+    sub_header_text = SUBHEADER_TEXT
+    round_text = f"Round Robin Round {game['round']}"
+
+    header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip = create_header_text_clips(header_text, sub_header_text, round_text, text_color)
+
+    home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
+    away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
+
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+
+    opening_screen = CompositeVideoClip([
+        color_background, 
+        header_text_clip, 
+        sub_header_text_clip,
+        round_text_fade_in_clip,
+        round_text_clip,
+        home_team_logo_clip,
+        away_team_logo_clip,
+        home_team_name_clip,
+        away_team_name_clip,
+        home_team_match_score_clip,
+        away_team_match_score_clip,
+        vs_clip
+        ])
+    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+
+def create_ending_screen(output_directory, game):
+    background_color =  (0, 0, 255) #Dark blue
+    text_color = (255, 255, 255)
+
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    home_team_logo_path = game["home_team_logo_path"]
+    away_team_logo_path = game["away_team_logo_path"]
+    home_team_match_score_start = "0-0-0" # Might be needed once we have dynamic scores
+    away_team_match_score_start = "0-0-0"
+    home_team_game_score = "1" # This will be dynamic
+    away_team_game_score = "2" # This will be dynamic
+    home_team_match_score_end = "0-1-0" # This will be dynamic
+    away_team_match_score_end = "1-0-0" # This will be dynamic
+
+    final_score_text = f"Final Score: {home_team} {home_team_game_score} - {away_team_game_score} {away_team}"
+     
+    header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, final_score_text, text_color)
+
+    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_start = create_team_clip(home_team, home_team_match_score_end, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
+    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_start = create_team_clip(away_team, away_team_match_score_end, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
+
+    closing_screen = CompositeVideoClip([
+        color_background, 
+        header_text_clip, 
+        sub_header_text_clip,
+        final_score_fade_in_clip,
+        final_score_clip,
+        home_team_logo_clip_start,
+        away_team_logo_clip_start,
+        home_team_name_clip_start,
+        away_team_name_clip_start,
+        home_team_match_score_clip_start,
+        away_team_match_score_clip_start,
+        ])
+    closing_screen.write_videofile(f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_closing_screen.mp4", codec="libx264", fps=24)
+
+
+    
+
 def process_game(output_path, game):
-    create_opening_screen(output_path, game)
+    create_simple_opening_screen(output_path, game)
     # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
+    create_ending_screen(output_path, game)
 
 
 def run(output_path, games):
@@ -188,6 +320,7 @@ if __name__ == '__main__':
         games = json.load(f)
 
 
-    # Just run on one game for testing
-    games = games[:1]
+    # Pick one random game of the 10 for testing
+    random_game_number = math.floor(random.random() * 10)
+    games = [games[random_game_number]]
     run(output_path, games)
