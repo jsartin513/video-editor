@@ -172,6 +172,7 @@ def create_simple_opening_screen(output_directory, game):
     away_team_logo_path = game["away_team_logo_path"]
     home_team_match_score = "0-0-0"
     away_team_match_score = "0-0-0"
+    vs_text = "vs"
     
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
@@ -195,11 +196,13 @@ def create_simple_opening_screen(output_directory, game):
     home_team_logo_clip = ImageClip(home_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.1, 0.6), relative=True)
     away_team_logo_clip = ImageClip(away_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.8, 0.6), relative=True)
 
-    home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.6), relative=True).with_duration(TOTAL_DURATION)
+    home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.25, 0.6), relative=True).with_duration(TOTAL_DURATION)
     away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.6), relative=True).with_duration(TOTAL_DURATION)
 
-    home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.3, 0.7), relative=True).with_duration(TOTAL_DURATION)
+    home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.25, 0.7), relative=True).with_duration(TOTAL_DURATION)
     away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.7), relative=True).with_duration(TOTAL_DURATION)
+
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.6), relative=True).with_duration(TOTAL_DURATION)
 
     opening_screen = CompositeVideoClip([
         color_background, 
@@ -212,6 +215,7 @@ def create_simple_opening_screen(output_directory, game):
         away_team_name_clip,
         home_team_match_score_clip,
         away_team_match_score_clip,
+        vs_clip
         ])
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
