@@ -165,6 +165,36 @@ def create_opening_screen(output_directory, game):
     opening_screen.write_videofile(output_path, codec="libx264", fps=24)
 
 
+def create_team_clip(team_name, match_score, logo_path, text_color, side="left"):
+    # Add position based on which side it is (left or right)
+    if side == "left":
+        logo_position = (0.1, 0.6)
+        team_name_position = (0.25, 0.6)
+        match_score_position = (0.25, 0.7)
+    else:
+        logo_position = (0.8, 0.6)
+        team_name_position = (0.6, 0.6)
+        match_score_position = (0.6, 0.7)
+
+
+    # Create the logo clip
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    logo_clip = (
+        ImageClip(logo_path, duration=TOTAL_DURATION).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(logo_position, relative=True)
+    )
+    team_name_clip = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+        .with_position(team_name_position, relative=True).with_duration(TOTAL_DURATION)
+    )
+    match_score_clip = (
+        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+        .with_position(match_score_position, relative=True).with_duration(TOTAL_DURATION)
+    )
+    return logo_clip, team_name_clip, match_score_clip
+
+    
+
 def create_simple_opening_screen(output_directory, game):
     home_team = game["home_team"]
     away_team = game["away_team"]
@@ -175,7 +205,6 @@ def create_simple_opening_screen(output_directory, game):
     vs_text = "vs"
     
     output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
-
 
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
@@ -192,15 +221,8 @@ def create_simple_opening_screen(output_directory, game):
     sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
     round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(TOTAL_DURATION)
 
-
-    home_team_logo_clip = ImageClip(home_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.1, 0.6), relative=True)
-    away_team_logo_clip = ImageClip(away_team_logo_path).resized(width=LOGO_ICON_MAX_WIDTH).with_duration(TOTAL_DURATION).with_position((0.8, 0.6), relative=True)
-
-    home_team_name_clip = TextClip(font=FONT_PATH, text=home_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.25, 0.6), relative=True).with_duration(TOTAL_DURATION)
-    away_team_name_clip = TextClip(font=FONT_PATH, text=away_team, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.6), relative=True).with_duration(TOTAL_DURATION)
-
-    home_team_match_score_clip = TextClip(font=FONT_PATH, text=home_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.25, 0.7), relative=True).with_duration(TOTAL_DURATION)
-    away_team_match_score_clip = TextClip(font=FONT_PATH, text=away_team_match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.6, 0.7), relative=True).with_duration(TOTAL_DURATION)
+    home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left")
+    away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right")
 
     vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_duration(TOTAL_DURATION)
 
