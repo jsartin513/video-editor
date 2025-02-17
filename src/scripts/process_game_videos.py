@@ -29,6 +29,9 @@ ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 TOTAL_DURATION = 10
 STANDARD_TRANSITION_TIME = 1.5
 
+HEADER_TEXT = "Boston Dodgeball League"
+SUBHEADER_TEXT = "The Throw Down 3"
+
 
 
 # Create a circular mask
@@ -198,7 +201,15 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
     )
     return logo_clip, team_name_clip, match_score_clip
 
-    
+def create_header_text_clips(header_text, subheader_text, round_text, text_color):
+    header_font_size = 72
+    subheader_font_size = 60
+    round_font_size = 48
+
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    return header_text_clip, sub_header_text_clip, round_text_clip
 
 def create_simple_opening_screen(output_directory, game):
     home_team = game["home_team"]
@@ -213,18 +224,13 @@ def create_simple_opening_screen(output_directory, game):
 
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
-    header_font_size = 72
-    subheader_font_size = 60
-    round_font_size = 48
 
     color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
-    header_text = "Boston Dodgeball League"
-    sub_header_text = "The Throw Down 3"
+    header_text = HEADER_TEXT
+    sub_header_text = SUBHEADER_TEXT
     round_text = f"Round Robin Round {game['round']}"
 
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
-    sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
-    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    header_text_clip, sub_header_text_clip, round_text_clip = create_header_text_clips(header_text, sub_header_text, round_text, text_color)
 
     home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
@@ -249,32 +255,23 @@ def create_simple_opening_screen(output_directory, game):
 def create_ending_screen(output_directory, game):
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
-    header_font_size = 72
-    subheader_font_size = 60
-    round_font_size = 48
 
     color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
-    header_text = "Boston Dodgeball League"
-    sub_header_text = "The Throw Down 3"
-    round_text = f"Round Robin Round {game['round']}"
-
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
-    sub_header_text_clip = TextClip(font=FONT_PATH, text=sub_header_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
 
     home_team = game["home_team"]
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
-    home_team_match_score_start = "0-0-0"
+    home_team_match_score_start = "0-0-0" # Might be needed once we have dynamic scores
     away_team_match_score_start = "0-0-0"
-    vs_text = "vs"
     home_team_game_score = "1" # This will be dynamic
     away_team_game_score = "2" # This will be dynamic
     home_team_match_score_end = "0-1-0" # This will be dynamic
     away_team_match_score_end = "1-0-0" # This will be dynamic
 
     final_score_text = f"Final Score: {home_team} {home_team_game_score} - {away_team_game_score} {away_team}"
-    final_score_clip = TextClip(font=FONT_PATH, text=final_score_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+     
+    header_text_clip, sub_header_text_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, final_score_text, text_color)
 
     home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_start = create_team_clip(home_team, home_team_match_score_end, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_start = create_team_clip(away_team, away_team_match_score_end, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
