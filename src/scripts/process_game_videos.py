@@ -26,8 +26,8 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 15
-STANDARD_TRANSITION_TIME = 3
+TOTAL_DURATION = 10
+STANDARD_TRANSITION_TIME = 1.5
 
 
 
@@ -168,6 +168,7 @@ def create_opening_screen(output_directory, game):
 
 
 def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
+    duration = TOTAL_DURATION - start_time
     # Add position based on which side it is (left or right)
     if side == "left":
         logo_position = (0.1, 0.6)
@@ -181,19 +182,19 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
     # Create the logo clip
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip = (
-        ImageClip(logo_path, duration=TOTAL_DURATION - start_time).resized(width=LOGO_ICON_MAX_WIDTH)
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_mask(circular_mask).with_position(logo_position, relative=True)
         .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
     team_name_clip = (
         TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
-        .with_position(team_name_position, relative=True).with_duration(TOTAL_DURATION - start_time)
+        .with_position(team_name_position, relative=True).with_duration(duration)
         .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
     match_score_clip = (
         TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
-        .with_position(match_score_position, relative=True).with_duration(TOTAL_DURATION - start_time - STANDARD_TRANSITION_TIME)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time + STANDARD_TRANSITION_TIME)
+        .with_position(match_score_position, relative=True).with_duration(duration - STANDARD_TRANSITION_TIME)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
     return logo_clip, team_name_clip, match_score_clip
 
@@ -228,7 +229,7 @@ def create_simple_opening_screen(output_directory, game):
     home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
 
-    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
 
     opening_screen = CompositeVideoClip([
         color_background, 
