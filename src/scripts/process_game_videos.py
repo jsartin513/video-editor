@@ -197,7 +197,7 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
     match_score_clip = (
         TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
         .with_position(match_score_position, relative=True).with_duration(duration - STANDARD_TRANSITION_TIME)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time + STANDARD_TRANSITION_TIME)
     )
     return logo_clip, team_name_clip, match_score_clip
 
@@ -208,8 +208,8 @@ def create_header_text_clips(header_text, subheader_text, round_text, text_color
 
     header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
     sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
-    round_text_fade_in_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(STANDARD_TRANSITION_TIME).with_start(STANDARD_TRANSITION_TIME)
-    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    round_text_fade_in_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(STANDARD_TRANSITION_TIME).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
     return header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
 
 def create_simple_opening_screen(output_directory, game):
@@ -234,7 +234,7 @@ def create_simple_opening_screen(output_directory, game):
     header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip = create_header_text_clips(header_text, sub_header_text, round_text, text_color)
 
     home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
-    away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
+    away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
 
     vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
 
