@@ -137,21 +137,31 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
 
-def get_team_name_and_logo_for_video_overlay(team_name, logo_path, position, start_time=TOTAL_DURATION):
+def get_team_name_and_logo_for_video_overlay(team_name, logo_path, position, duration, start_time=TOTAL_DURATION):
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip = (
-        ImageClip(logo_path, duration=TOTAL_DURATION - start_time).resized(width=LOGO_ICON_MAX_WIDTH)
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_mask(circular_mask).with_position(position, relative=True).with_start(start_time)
     )
     team_name_clip = (
         TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color="white", bg_color="black")
-        .with_position(position, relative=True).with_duration(TOTAL_DURATION - start_time).with_start(start_time)
+        .with_position(position, relative=True).with_duration(duration).with_start(start_time)
     )
     return logo_clip, team_name_clip
 
 
 def get_game_video_with_overlay(game):
-    game_video = VideoFileClip(game["video_path"]).with_start(TOTAL_DURATION)
+    game_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME
+    static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
+    game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
+    game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time)
+    game_duration = game_video.duration
+
+    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], (0.8, 0.2), game_duration, game_start_time)
+    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], (0.8, 0.4), game_duration, game_start_time)
+
+    video_with_overlay = CompositeVideoClip([game_video, home_team_logo_clip, home_team_name_clip, away_team_logo_clip, away_team_name_clip])
+    return video_with_overlay
     
 
 # Create opening screen with "standard" transitions using the variables described above
@@ -328,7 +338,7 @@ def process_game(output_path, game):
 
     game_path = game["video_path"]
     game_path = static_test_clip_path
-    game_video = VideoFileClip(game_path).with_start(TOTAL_DURATION) # Original video - later it'll have team info
+    game_video = get_game_video_with_overlay(game) # Original video - later it'll have team info
     
     # Get some info about the game video so we can apply it to the opening and closing screens
     game_video_width, game_video_height = game_video.size
@@ -342,7 +352,7 @@ def process_game(output_path, game):
 
     opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
     # add_team_name_to_video(ligame["video_path"], game["home_team"], game["away_team"])
-    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(TOTAL_DURATION + game_video_duration).resized((game_video.size))
+    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(game_video_duration).resized((game_video.size))
 
    
     # opening_screen_slideout = slide_out(opening_screen, STANDARD_TRANSITION_TIME, 1080, 0)
