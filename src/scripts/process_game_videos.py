@@ -26,13 +26,18 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 10
-STANDARD_TRANSITION_TIME = 1.5
+TOTAL_DURATION = 8
+STANDARD_TRANSITION_TIME = 1
 
 HEADER_TEXT = "Boston Dodgeball League"
 SUBHEADER_TEXT = "The Throw Down 3"
 
-
+def slide_out(clip, duration, height, counter):
+    def calc(t, counter, duration, h):
+        ts = t - (counter * duration)
+        val = min(-45, h*(duration-ts))
+        return ('center', val)
+    return clip.with_position(lambda t: calc(t, counter, duration, height)).with_duration(duration)
 
 # Create a circular mask
 def get_circular_mask():
@@ -298,19 +303,36 @@ def process_game(output_path, game):
     away_team = game["away_team"]
     formatted_home_team = format_team_name_for_filename(home_team)
     formatted_away_team = format_team_name_for_filename(away_team)
+    static_test_clip_path = "src/static/test_clip_11_seconds.mp4"
+    static_test_clip_duration = 11
 
     
     opening_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_opening_screen.mp4"
     closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
 
-    opening_screen = create_simple_opening_screen(game)
-    # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
-    closing_screen = create_ending_screen(game)
+    opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")])
+    # add_team_name_to_video(ligame["video_path"], game["home_team"], game["away_team"])
+    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(TOTAL_DURATION + static_test_clip_duration)
+
+    game_video = VideoFileClip(static_test_clip_path).with_start(TOTAL_DURATION) # Original video - later it'll have team info
+
+    # opening_screen_slideout = slide_out(opening_screen, STANDARD_TRANSITION_TIME, 1080, 0)
+    # closing_screen_slidein = slide_out(closing_screen, STANDARD_TRANSITION_TIME, 1080, 1)
+
+    # Add the opening screen to the beginning of the video
+    # full_video = concatenate_videoclips([
+    #     opening_screen, 
+    #     # opening_screen_slideout,
+    #     game_video, 
+    #     # closing_screen_slidein,
+    #     closing_screen])   
+    full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
+    full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24)
 
 
-    opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
+    # opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
 
-    closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
+    # closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
 
 
 def run(output_path, games):
