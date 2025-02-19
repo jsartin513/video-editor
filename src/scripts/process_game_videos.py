@@ -122,17 +122,17 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip_fade_in = (
         ImageClip(logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-        # .with_mask(circular_mask)
+        .with_mask(circular_mask)
         .with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(fade_in_clip_start)
     )
     logo_clip_moving = (
         ImageClip(logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-        # .with_mask(circular_mask)
+        .with_mask(circular_mask)
         .with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ending_logo_position), relative=True).with_start(moving_clip_start)
     )
     logo_clip_final_position = (
         ImageClip(logo_path, duration=TOTAL_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
-        # .with_mask(circular_mask)
+        .with_mask(circular_mask)
         .with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
