@@ -122,7 +122,6 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
 
 def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
-    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip = (
         ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_IN_GAME_WIDTH).with_layer_index(15)
     )
@@ -145,7 +144,6 @@ def get_game_video_with_overlay(game):
 
     team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
 
-    # video_with_overlay = CompositeVideoClip([game_video, home_team_logo_clip, home_team_name_clip, away_team_logo_clip, away_team_name_clip])
     video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
     return video_with_overlay
     
@@ -336,20 +334,9 @@ def process_game(output_path, game):
     closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
 
     opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
-    # add_team_name_to_video(ligame["video_path"], game["home_team"], game["away_team"])
     closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(game_video_duration).resized((game_video.size))
 
-   
-    # opening_screen_slideout = slide_out(opening_screen, STANDARD_TRANSITION_TIME, 1080, 0)
-    # closing_screen_slidein = slide_out(closing_screen, STANDARD_TRANSITION_TIME, 1080, 1)
 
-    # Add the opening screen to the beginning of the video
-    # full_video = concatenate_videoclips([
-    #     opening_screen, 
-    #     # opening_screen_slideout,
-    #     game_video, 
-    #     # closing_screen_slidein,
-    #     closing_screen])   
     full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
     full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24)
 
