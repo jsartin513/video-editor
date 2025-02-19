@@ -205,6 +205,39 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
     )
     return logo_clip, team_name_clip, match_score_clip
 
+def create_final_team_with_score_clip(team_name, match_score, game_score, logo_path, text_color, side="left", start_time=0):
+    duration = OPENING_SCREEN_DURATION - start_time
+    # Add position based on which side it is (left or right)
+    if side == "left":
+        logo_position = (0.1, 0.6)
+        team_name_position = (0.25, 0.6)
+        match_score_position = (0.25, 0.7)
+    else:
+        logo_position = (0.8, 0.6)
+        team_name_position = (0.6, 0.6)
+        match_score_position = (0.6, 0.7)
+
+    # Create the logo clip
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    logo_clip = (
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    team_name_clip = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    match_score_clip = (
+        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    game_score_clip = (
+        TextClip(font=FONT_PATH, text=game_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    )
+    return logo_clip, team_name_clip, match_score_clip, game_score_clip
+
 def create_header_text_clips(header_text, subheader_text, round_text, text_color):
     header_font_size = 72
     subheader_font_size = 60
@@ -278,24 +311,22 @@ def create_ending_screen(game):
 
     final_score_text = f"Final Score: {home_team} {home_team_game_score} - {away_team_game_score} {away_team}"
      
-    bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, final_score_text, text_color)
+    bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, "", text_color)
+ 
+    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_end, home_game_score_clip = create_final_team_with_score_clip(home_team, home_team_match_score_end, home_team_game_score, home_team_logo_path, text_color)
+    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_end, away_game_score_clip = create_final_team_with_score_clip(away_team, away_team_match_score_end, away_team_game_score, away_team_logo_path, text_color)
 
-    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_start = create_team_clip(home_team, home_team_match_score_end, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
-    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_start = create_team_clip(away_team, away_team_match_score_end, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
+    scores_clip = clips_array([[home_team_logo_clip_start, home_team_name_clip_start, home_game_score_clip, 
+                               away_game_score_clip, away_team_name_clip_start, away_team_logo_clip_start],
+                               ]
+                               ).with_position(("center", "center")).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME * 2).with_start(STANDARD_TRANSITION_TIME * 2)
 
     closing_screen = CompositeVideoClip([
         color_background, 
         bdl_logo_clip,
         header_text_clip, 
         sub_header_text_clip,
-        final_score_fade_in_clip,
-        final_score_clip,
-        home_team_logo_clip_start,
-        away_team_logo_clip_start,
-        home_team_name_clip_start,
-        away_team_name_clip_start,
-        home_team_match_score_clip_start,
-        away_team_match_score_clip_start,
+        scores_clip,
         ])
     return closing_screen
 
