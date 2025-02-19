@@ -30,7 +30,7 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 8
+OPENING_SCREEN_DURATION = 8
 STANDARD_TRANSITION_TIME = 1
 
 BLUE_COLOR = (65,143,222)
@@ -64,7 +64,7 @@ def get_bdl_tournament_banner():
     text = "Boston Dodgeball League presents The Throw Down 3 - February 22, 2025"
     banner = (
         TextClip(font=FONT_PATH, text=text, size=(1920, 24))
-        .with_position(("center", "top")).with_duration(TOTAL_DURATION)
+        .with_position(("center", "top")).with_duration(OPENING_SCREEN_DURATION)
     )
     return banner
 
@@ -83,7 +83,7 @@ def get_name_clips(team_name, start_position, end_position, start_time=0):
         .with_position(lambda t: function_for_position(t, start_position, end_position), relative=True).with_start(moving_clip_start)
     )
     team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=OPENING_SCREEN_DURATION - final_position_start)
         .with_position(end_position, relative=True).with_start(final_position_start)
     )
     return team_clip_fade_in, team_clip_moving, team_clip_final_position
@@ -106,7 +106,7 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
         .with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ending_logo_position), relative=True).with_start(moving_clip_start)
     )
     logo_clip_final_position = (
-        ImageClip(logo_path, duration=TOTAL_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
+        ImageClip(logo_path, duration=OPENING_SCREEN_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_mask(circular_mask)
         .with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
@@ -123,7 +123,7 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
 
 
 def get_game_video_with_overlay(game):
-    game_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME
+    game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
     static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
     game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
     game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time).with_layer_index(10) 
@@ -146,7 +146,7 @@ def create_opening_screen(output_directory, game):
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
 
-    background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
+    background_image = ImageClip(BDL_LOGO_PATH).with_duration(OPENING_SCREEN_DURATION)
 
 
     # tournament_banner = get_bdl_tournament_banner()
@@ -175,7 +175,7 @@ def create_opening_screen(output_directory, game):
     return opening_screen
 
 def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
-    duration = TOTAL_DURATION - start_time
+    duration = OPENING_SCREEN_DURATION - start_time
     # Add position based on which side it is (left or right)
     if side == "left":
         logo_position = (0.1, 0.6)
@@ -210,12 +210,12 @@ def create_header_text_clips(header_text, subheader_text, round_text, text_color
     subheader_font_size = 60
     round_font_size = 48
 
-    bdl_logo_clip = ImageClip(BDL_LOGO_PATH).resized(height=150).with_duration(TOTAL_DURATION).with_position((.1, .2), relative=True)
+    bdl_logo_clip = ImageClip(BDL_LOGO_PATH).resized(height=150).with_duration(OPENING_SCREEN_DURATION).with_position((.1, .2), relative=True)
 
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
-    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(OPENING_SCREEN_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(OPENING_SCREEN_DURATION)
     round_text_fade_in_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(STANDARD_TRANSITION_TIME).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME * 2)
     return bdl_logo_clip, header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
 
 def create_simple_opening_screen(game):
@@ -230,7 +230,7 @@ def create_simple_opening_screen(game):
     background_color =  BLUE_COLOR #Dark blue
     text_color = GOLD_COLOR
 
-    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION)
     header_text = HEADER_TEXT
     sub_header_text = SUBHEADER_TEXT
     round_text = f"Round Robin Round {game['round']}"
@@ -240,7 +240,7 @@ def create_simple_opening_screen(game):
     home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
 
-    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME)
 
     opening_screen = CompositeVideoClip([
         color_background, 
@@ -263,7 +263,7 @@ def create_ending_screen(game):
     background_color =  BLUE_COLOR #Dark blue
     text_color = GOLD_COLOR
 
-    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION)
 
     home_team = game["home_team"]
     away_team = game["away_team"]
