@@ -75,27 +75,6 @@ def get_bdl_tournament_banner():
     )
     return banner
 
-# Add the team names to stylized panels in the video
-def add_team_name_to_video(filename, home_team, away_team):
-    output_path = f"{filename}_with_team_names.mp4"
-    text = f"{home_team} vs. {away_team}"
-    video = VideoFileClip(filename)
-    home_team_clip = (
-    TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", bg_color="yellow")
-    .with_position((1800, 2200))
-    .with_duration(video.duration)
-    )
-    away_team_clip = (
-    TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow")
-    .with_position((1200, 2200))
-    .with_duration(video.duration)
-    )
-
-    video_with_text = CompositeVideoClip([video, home_team_clip, away_team_clip])
-
-    video_with_text.write_videofile(output_path, codec="libx264", fps=24)
-    return output_path
-
 
 # Create clips for the team name with "standard" transitions using the variables described above
 def get_name_clips(team_name, start_position, end_position, start_time=0):
