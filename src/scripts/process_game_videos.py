@@ -154,7 +154,7 @@ def get_game_video_with_overlay(game):
     game_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME
     static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
     game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
-    game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time)
+    game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time).with_layer_index(10) 
     game_duration = game_video.duration
 
     home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], (0.8, 0.2), game_duration, game_start_time)
@@ -283,7 +283,7 @@ def create_simple_opening_screen(game):
         home_team_match_score_clip,
         away_team_match_score_clip,
         vs_clip
-        ])
+        ]).with_layer_index(20)
     return opening_screen
 
 def create_ending_screen(game):
