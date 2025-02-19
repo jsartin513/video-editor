@@ -7,6 +7,8 @@ import numpy as np
 import argparse
 
 from utils.utils import log, format_team_name_for_filename
+from utils.moviepy import function_for_position
+
 
 FONT_PATH = "./font/font.ttf"
 
@@ -56,17 +58,6 @@ def get_circular_mask():
     return mask
 
 
-def function_for_size(t, start_size, end_size, clip_duration=STANDARD_TRANSITION_TIME):
-    return start_size + (end_size - start_size) * t / clip_duration
-
-# Create a function that takes in a time t and returns the position of an object moving from start_position to end_position
-def function_for_position(t, start_position, end_position, clip_duration=STANDARD_TRANSITION_TIME):
-    x_start_position, y_start_position = start_position
-    x_end_position, y_end_position = end_position
-    x_distance = x_end_position - x_start_position
-    y_distance = y_end_position - y_start_position
-
-    return (x_start_position + x_distance * t / clip_duration, y_start_position + y_distance * t / clip_duration)
 
 # This is going to have static information about this tournament
 def get_bdl_tournament_banner():
