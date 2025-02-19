@@ -309,15 +309,15 @@ def create_ending_screen(game):
     home_team_match_score_end = "0-1-0" # This will be dynamic
     away_team_match_score_end = "1-0-0" # This will be dynamic
 
-    final_score_text = f"Final Score: {home_team} {home_team_game_score} - {away_team_game_score} {away_team}"
+    final_score_text = f"  {home_team_game_score} - {away_team_game_score}  "
      
     bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, "", text_color)
  
+    final_score_clip = TextClip(font=FONT_PATH, text=final_score_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
     home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_end, home_game_score_clip = create_final_team_with_score_clip(home_team, home_team_match_score_end, home_team_game_score, home_team_logo_path, text_color)
     away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_end, away_game_score_clip = create_final_team_with_score_clip(away_team, away_team_match_score_end, away_team_game_score, away_team_logo_path, text_color)
 
-    scores_clip = clips_array([[home_team_logo_clip_start, home_team_name_clip_start, home_game_score_clip, 
-                               away_game_score_clip, away_team_name_clip_start, away_team_logo_clip_start],
+    scores_clip = clips_array([[home_team_logo_clip_start, home_team_name_clip_start, final_score_clip, away_team_name_clip_start, away_team_logo_clip_start],
                                ]
                                ).with_position(("center", "center")).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME * 2).with_start(STANDARD_TRANSITION_TIME * 2)
 
