@@ -158,12 +158,9 @@ def create_opening_screen(output_directory, game):
     away_team_logo_path = game["away_team_logo_path"]
 
     background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
-    # background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
-    # background_image_fading = ImageClip(BDL_LOGO_PATH).with_duration(STANDARD_TRANSITION_TIME).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeOut(STANDARD_TRANSITION_TIME)])
-    # game_video_fade_in = VideoFileClip(game["video_path"]).with_duration(13).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
 
 
-    tournament_banner = get_bdl_tournament_banner()
+    # tournament_banner = get_bdl_tournament_banner()
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_logo_clips(home_team_logo_path, ENDING_HOME_TEAM_LOGO_POSITION)
     home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_name_clips(home_team, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
     away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_logo_clips(away_team_logo_path, ENDING_AWAY_TEAM_LOGO_POSITION, STANDARD_TRANSITION_TIME)
@@ -171,9 +168,7 @@ def create_opening_screen(output_directory, game):
  
     opening_screen = CompositeVideoClip([
         background_image,
-        # background_image_fading,
-        # game_video_fade_in,
-        tournament_banner,
+        # tournament_banner,
         home_team_logo_clip_fade_in,
         home_team_logo_clip_moving,
         home_team_logo_final_position,
