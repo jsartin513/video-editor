@@ -17,6 +17,8 @@ LOGO_ICON_MAX_WIDTH = 180
 LOGO_ICON_MIN_WIDTH = 120
 TEAM_NAME_MAX_FONT_SIZE = 72
 TEAM_NAME_MIN_FONT_SIZE = 36
+LOGO_ICON_IN_GAME_WIDTH = 80
+TEAM_NAME_IN_GAME_FONT_SIZE = 12
 
 STARTING_LOGO_POSITION = (0.11, 0.2)
 STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
@@ -119,15 +121,13 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
 
-def get_team_name_and_logo_for_video_overlay(team_name, logo_path, position, duration, start_time=TOTAL_DURATION):
+def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip = (
-        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(position, relative=True).with_layer_index(15)
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_IN_GAME_WIDTH).with_layer_index(15)
     )
     team_name_clip = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color="white", bg_color="black")
-        .with_position(position, relative=True).with_duration(duration).with_layer_index(15)
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_IN_GAME_FONT_SIZE, color="white", bg_color="black").with_layer_index(15)
     )
     return logo_clip, team_name_clip
 
@@ -140,8 +140,8 @@ def get_game_video_with_overlay(game):
     game_duration = game_video.duration
 
     
-    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], (0.8, 0.2), game_duration, game_start_time)
-    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], (0.8, 0.4), game_duration, game_start_time)
+    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
+    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], game_duration)
 
     team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
 
