@@ -26,12 +26,18 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 10
-STANDARD_TRANSITION_TIME = 1.5
+TOTAL_DURATION = 8
+STANDARD_TRANSITION_TIME = 1
 
 HEADER_TEXT = "Boston Dodgeball League"
 SUBHEADER_TEXT = "The Throw Down 3"
 
+
+
+def add_bdl_watermark(video_file_clip):
+    bdl_logo = ImageClip(BDL_LOGO_PATH).resize(height=100).with_duration(video_file_clip.duration)
+    video_with_watermark = CompositeVideoClip([video_file_clip, bdl_logo.set_position(("right", "bottom"))])
+    return video_with_watermark
 
 
 # Create a circular mask
@@ -116,18 +122,47 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip_fade_in = (
         ImageClip(logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(fade_in_clip_start)
+        .with_mask(circular_mask)
+        .with_position(STARTING_LOGO_POSITION, relative=True).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(fade_in_clip_start)
     )
     logo_clip_moving = (
         ImageClip(logo_path, duration=STANDARD_TRANSITION_TIME).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ending_logo_position), relative=True).with_start(moving_clip_start)
+        .with_mask(circular_mask)
+        .with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ending_logo_position), relative=True).with_start(moving_clip_start)
     )
     logo_clip_final_position = (
         ImageClip(logo_path, duration=TOTAL_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(ending_logo_position, relative=True).with_start(final_position_start)
+        .with_mask(circular_mask)
+        .with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
 
+def get_team_name_and_logo_for_video_overlay(team_name, logo_path, position, duration, start_time=TOTAL_DURATION):
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    logo_clip = (
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask).with_position(position, relative=True).with_start(start_time)
+    )
+    team_name_clip = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color="white", bg_color="black")
+        .with_position(position, relative=True).with_duration(duration).with_start(start_time)
+    )
+    return logo_clip, team_name_clip
+
+
+def get_game_video_with_overlay(game):
+    game_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME
+    static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
+    game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
+    game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time).with_layer_index(10) 
+    game_duration = game_video.duration
+
+    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], (0.8, 0.2), game_duration, game_start_time)
+    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], (0.8, 0.4), game_duration, game_start_time)
+
+    video_with_overlay = CompositeVideoClip([game_video, home_team_logo_clip, home_team_name_clip, away_team_logo_clip, away_team_name_clip])
+    return video_with_overlay
+    
 
 # Create opening screen with "standard" transitions using the variables described above
 def create_opening_screen(output_directory, game):
@@ -135,7 +170,6 @@ def create_opening_screen(output_directory, game):
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
-    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
 
     background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
     # background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
@@ -167,8 +201,8 @@ def create_opening_screen(output_directory, game):
         away_team_clip_moving,
         away_team_clip_final_position
     ])
-    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
-
+    # opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+    return opening_screen
 
 def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
     duration = TOTAL_DURATION - start_time
@@ -212,7 +246,7 @@ def create_header_text_clips(header_text, subheader_text, round_text, text_color
     round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
     return header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
 
-def create_simple_opening_screen(output_directory, game):
+def create_simple_opening_screen(game):
     home_team = game["home_team"]
     away_team = game["away_team"]
     home_team_logo_path = game["home_team_logo_path"]
@@ -221,8 +255,6 @@ def create_simple_opening_screen(output_directory, game):
     away_team_match_score = "0-0-0"
     vs_text = "vs"
     
-    output_path = f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_opening_screen.mp4"
-
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
 
@@ -251,10 +283,10 @@ def create_simple_opening_screen(output_directory, game):
         home_team_match_score_clip,
         away_team_match_score_clip,
         vs_clip
-        ])
-    opening_screen.write_videofile(output_path, codec="libx264", fps=24)
+        ]).with_layer_index(20)
+    return opening_screen
 
-def create_ending_screen(output_directory, game):
+def create_ending_screen(game):
     background_color =  (0, 0, 255) #Dark blue
     text_color = (255, 255, 255)
 
@@ -291,15 +323,63 @@ def create_ending_screen(output_directory, game):
         home_team_match_score_clip_start,
         away_team_match_score_clip_start,
         ])
-    closing_screen.write_videofile(f"{output_directory}/{format_team_name_for_filename(home_team)}_vs_{format_team_name_for_filename(away_team)}_closing_screen.mp4", codec="libx264", fps=24)
+    return closing_screen
 
 
     
 
 def process_game(output_path, game):
-    create_simple_opening_screen(output_path, game)
-    # add_team_name_to_video(game["video_path"], game["home_team"], game["away_team"])
-    create_ending_screen(output_path, game)
+    home_team = game["home_team"]
+    away_team = game["away_team"]
+    formatted_home_team = format_team_name_for_filename(home_team)
+    formatted_away_team = format_team_name_for_filename(away_team)
+    static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
+
+
+    game_path = game["video_path"]
+    game_path = static_test_clip_path
+    game_video = get_game_video_with_overlay(game) # Original video - later it'll have team info
+    
+    # Get some info about the game video so we can apply it to the opening and closing screens
+    game_video_width, game_video_height = game_video.size
+    game_video_fps = game_video.fps
+    game_video_duration = game_video.duration
+
+
+
+    opening_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_opening_screen.mp4"
+    closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
+
+    opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
+    # add_team_name_to_video(ligame["video_path"], game["home_team"], game["away_team"])
+    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(game_video_duration).resized((game_video.size))
+
+   
+    # opening_screen_slideout = slide_out(opening_screen, STANDARD_TRANSITION_TIME, 1080, 0)
+    # closing_screen_slidein = slide_out(closing_screen, STANDARD_TRANSITION_TIME, 1080, 1)
+
+    # Add the opening screen to the beginning of the video
+    # full_video = concatenate_videoclips([
+    #     opening_screen, 
+    #     # opening_screen_slideout,
+    #     game_video, 
+    #     # closing_screen_slidein,
+    #     closing_screen])   
+    full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
+    full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24)
+
+    log(f"Game video details: {game}")
+    log(f"Game video width: {game_video_width}")
+    log(f"Game video height: {game_video_height}")
+    log(f"Final video details: {full_video}")
+    log(f"Final video width: {full_video.size[0]}")
+    log(f"Final video height: {full_video.size[1]}")
+    log(f"Final video duration: {full_video.duration}")
+    log(f"Final video fps: {full_video.fps}")
+
+    # opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
+
+    # closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
 
 
 def run(output_path, games):
