@@ -7,6 +7,8 @@ import numpy as np
 import argparse
 
 from utils.utils import log, format_team_name_for_filename
+from utils.moviepy import function_for_position
+
 
 FONT_PATH = "./font/font.ttf"
 
@@ -17,6 +19,8 @@ LOGO_ICON_MAX_WIDTH = 180
 LOGO_ICON_MIN_WIDTH = 120
 TEAM_NAME_MAX_FONT_SIZE = 72
 TEAM_NAME_MIN_FONT_SIZE = 36
+LOGO_ICON_IN_GAME_WIDTH = 80
+TEAM_NAME_IN_GAME_FONT_SIZE = 12
 
 STARTING_LOGO_POSITION = (0.11, 0.2)
 STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
@@ -26,7 +30,7 @@ ENDING_HOME_TEAM_LOGO_POSITION = (0.11, 0.8)
 ENDING_AWAY_TEAM_NAME_POSITION = (0.55, 0.8)
 ENDING_HOME_TEAM_NAME_POSITION = (0.205, 0.8)
 
-TOTAL_DURATION = 8
+OPENING_SCREEN_DURATION = 8
 STANDARD_TRANSITION_TIME = 1
 
 BLUE_COLOR = (65,143,222)
@@ -54,47 +58,15 @@ def get_circular_mask():
     return mask
 
 
-def function_for_size(t, start_size, end_size, clip_duration=STANDARD_TRANSITION_TIME):
-    return start_size + (end_size - start_size) * t / clip_duration
-
-# Create a function that takes in a time t and returns the position of an object moving from start_position to end_position
-def function_for_position(t, start_position, end_position, clip_duration=STANDARD_TRANSITION_TIME):
-    x_start_position, y_start_position = start_position
-    x_end_position, y_end_position = end_position
-    x_distance = x_end_position - x_start_position
-    y_distance = y_end_position - y_start_position
-
-    return (x_start_position + x_distance * t / clip_duration, y_start_position + y_distance * t / clip_duration)
 
 # This is going to have static information about this tournament
 def get_bdl_tournament_banner():
     text = "Boston Dodgeball League presents The Throw Down 3 - February 22, 2025"
     banner = (
         TextClip(font=FONT_PATH, text=text, size=(1920, 24))
-        .with_position(("center", "top")).with_duration(TOTAL_DURATION)
+        .with_position(("center", "top")).with_duration(OPENING_SCREEN_DURATION)
     )
     return banner
-
-# Add the team names to stylized panels in the video
-def add_team_name_to_video(filename, home_team, away_team):
-    output_path = f"{filename}_with_team_names.mp4"
-    text = f"{home_team} vs. {away_team}"
-    video = VideoFileClip(filename)
-    home_team_clip = (
-    TextClip(font=FONT_PATH, text=home_team, font_size=72, color="blue", bg_color="yellow")
-    .with_position((1800, 2200))
-    .with_duration(video.duration)
-    )
-    away_team_clip = (
-    TextClip(font=FONT_PATH, text=away_team, font_size=72, color="blue", bg_color="yellow")
-    .with_position((1200, 2200))
-    .with_duration(video.duration)
-    )
-
-    video_with_text = CompositeVideoClip([video, home_team_clip, away_team_clip])
-
-    video_with_text.write_videofile(output_path, codec="libx264", fps=24)
-    return output_path
 
 
 # Create clips for the team name with "standard" transitions using the variables described above
@@ -111,7 +83,7 @@ def get_name_clips(team_name, start_position, end_position, start_time=0):
         .with_position(lambda t: function_for_position(t, start_position, end_position), relative=True).with_start(moving_clip_start)
     )
     team_clip_final_position = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=TOTAL_DURATION - final_position_start)
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MAX_FONT_SIZE, color="black", duration=OPENING_SCREEN_DURATION - final_position_start)
         .with_position(end_position, relative=True).with_start(final_position_start)
     )
     return team_clip_fade_in, team_clip_moving, team_clip_final_position
@@ -134,39 +106,35 @@ def get_logo_clips(logo_path, ending_logo_position, start_time=0):
         .with_position(lambda t: function_for_position(t, STARTING_LOGO_POSITION, ending_logo_position), relative=True).with_start(moving_clip_start)
     )
     logo_clip_final_position = (
-        ImageClip(logo_path, duration=TOTAL_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
+        ImageClip(logo_path, duration=OPENING_SCREEN_DURATION - final_position_start).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_mask(circular_mask)
         .with_position(ending_logo_position, relative=True).with_start(final_position_start)
     )
     return logo_clip_fade_in, logo_clip_moving, logo_clip_final_position
 
-def get_team_name_and_logo_for_video_overlay(team_name, logo_path, position, duration, start_time=TOTAL_DURATION):
-    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
     logo_clip = (
-        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(position, relative=True).with_layer_index(15)
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_IN_GAME_WIDTH).with_layer_index(15)
     )
     team_name_clip = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color="white", bg_color="black")
-        .with_position(position, relative=True).with_duration(duration).with_layer_index(15)
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_IN_GAME_FONT_SIZE, color="white", bg_color="black").with_layer_index(15)
     )
     return logo_clip, team_name_clip
 
 
 def get_game_video_with_overlay(game):
-    game_start_time = TOTAL_DURATION - STANDARD_TRANSITION_TIME
+    game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
     static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
     game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
     game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time).with_layer_index(10) 
     game_duration = game_video.duration
 
     
-    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], (0.8, 0.2), game_duration, game_start_time)
-    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], (0.8, 0.4), game_duration, game_start_time)
+    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
+    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], game_duration)
 
     team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
 
-    # video_with_overlay = CompositeVideoClip([game_video, home_team_logo_clip, home_team_name_clip, away_team_logo_clip, away_team_name_clip])
     video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
     return video_with_overlay
     
@@ -178,13 +146,10 @@ def create_opening_screen(output_directory, game):
     home_team_logo_path = game["home_team_logo_path"]
     away_team_logo_path = game["away_team_logo_path"]
 
-    background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION)
-    # background_image = ImageClip(BDL_LOGO_PATH).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
-    # background_image_fading = ImageClip(BDL_LOGO_PATH).with_duration(STANDARD_TRANSITION_TIME).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeOut(STANDARD_TRANSITION_TIME)])
-    # game_video_fade_in = VideoFileClip(game["video_path"]).with_duration(13).with_start(TOTAL_DURATION - STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
+    background_image = ImageClip(BDL_LOGO_PATH).with_duration(OPENING_SCREEN_DURATION)
 
 
-    tournament_banner = get_bdl_tournament_banner()
+    # tournament_banner = get_bdl_tournament_banner()
     home_team_logo_clip_fade_in, home_team_logo_clip_moving, home_team_logo_final_position = get_logo_clips(home_team_logo_path, ENDING_HOME_TEAM_LOGO_POSITION)
     home_team_clip_fade_in, home_team_clip_moving, home_team_clip_final_position = get_name_clips(home_team, STARTING_TEAM_NAME_POSITION, ENDING_HOME_TEAM_NAME_POSITION)
     away_team_logo_clip_fade_in, away_team_logo_clip_moving, away_team_logo_final_position = get_logo_clips(away_team_logo_path, ENDING_AWAY_TEAM_LOGO_POSITION, STANDARD_TRANSITION_TIME)
@@ -192,9 +157,7 @@ def create_opening_screen(output_directory, game):
  
     opening_screen = CompositeVideoClip([
         background_image,
-        # background_image_fading,
-        # game_video_fade_in,
-        tournament_banner,
+        # tournament_banner,
         home_team_logo_clip_fade_in,
         home_team_logo_clip_moving,
         home_team_logo_final_position,
@@ -212,7 +175,7 @@ def create_opening_screen(output_directory, game):
     return opening_screen
 
 def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
-    duration = TOTAL_DURATION - start_time
+    duration = OPENING_SCREEN_DURATION - start_time
     # Add position based on which side it is (left or right)
     if side == "left":
         logo_position = (0.1, 0.6)
@@ -242,17 +205,46 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
     )
     return logo_clip, team_name_clip, match_score_clip
 
+def create_final_team_with_score_clip(team_name, match_score, game_score, logo_path, text_color, side="left", start_time=0):
+    duration = OPENING_SCREEN_DURATION - start_time
+    # Add position based on which side it is (left or right)
+    if side == "left":
+        logo_position = (0.1, 0.6)
+        team_name_position = (0.25, 0.6)
+        match_score_position = (0.25, 0.7)
+    else:
+        logo_position = (0.8, 0.6)
+        team_name_position = (0.6, 0.6)
+        match_score_position = (0.6, 0.7)
+
+    # Create the logo clip
+    circular_mask = ImageClip(get_circular_mask(), is_mask=True)
+    logo_clip = (
+        ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
+        .with_mask(circular_mask)
+    )
+    team_name_clip = (
+        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+    )
+    match_score_clip = (
+        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+    )
+    game_score_clip = (
+        TextClip(font=FONT_PATH, text=game_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+    )
+    return logo_clip, team_name_clip, match_score_clip, game_score_clip
+
 def create_header_text_clips(header_text, subheader_text, round_text, text_color):
     header_font_size = 72
     subheader_font_size = 60
     round_font_size = 48
 
-    bdl_logo_clip = ImageClip(BDL_LOGO_PATH).resized(height=150).with_duration(TOTAL_DURATION).with_position((.1, .2), relative=True)
+    bdl_logo_clip = ImageClip(BDL_LOGO_PATH).resized(height=150).with_duration(OPENING_SCREEN_DURATION).with_position((.1, .2), relative=True)
 
-    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(TOTAL_DURATION)
-    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(TOTAL_DURATION)
+    header_text_clip = TextClip(font=FONT_PATH, text=header_text, font_size=header_font_size, color=text_color).with_position(("center", 0.2), relative=True).with_duration(OPENING_SCREEN_DURATION)
+    sub_header_text_clip = TextClip(font=FONT_PATH, text=subheader_text, font_size=subheader_font_size, color=text_color).with_position(("center", 0.3), relative=True).with_duration(OPENING_SCREEN_DURATION)
     round_text_fade_in_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_duration(STANDARD_TRANSITION_TIME).with_start(STANDARD_TRANSITION_TIME).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
-    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME * 2)
+    round_text_clip = TextClip(font=FONT_PATH, text=round_text, font_size=round_font_size, color=text_color).with_position(("center", 0.4), relative=True).with_start(STANDARD_TRANSITION_TIME * 2).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME * 2)
     return bdl_logo_clip, header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip
 
 def create_simple_opening_screen(game):
@@ -267,7 +259,7 @@ def create_simple_opening_screen(game):
     background_color =  BLUE_COLOR #Dark blue
     text_color = GOLD_COLOR
 
-    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION)
     header_text = HEADER_TEXT
     sub_header_text = SUBHEADER_TEXT
     round_text = f"Round Robin Round {game['round']}"
@@ -277,7 +269,7 @@ def create_simple_opening_screen(game):
     home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
 
-    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(TOTAL_DURATION - STANDARD_TRANSITION_TIME)
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME)
 
     opening_screen = CompositeVideoClip([
         color_background, 
@@ -300,7 +292,7 @@ def create_ending_screen(game):
     background_color =  BLUE_COLOR #Dark blue
     text_color = GOLD_COLOR
 
-    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=TOTAL_DURATION)
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION)
 
     home_team = game["home_team"]
     away_team = game["away_team"]
@@ -313,26 +305,24 @@ def create_ending_screen(game):
     home_team_match_score_end = "0-1-0" # This will be dynamic
     away_team_match_score_end = "1-0-0" # This will be dynamic
 
-    final_score_text = f"Final Score: {home_team} {home_team_game_score} - {away_team_game_score} {away_team}"
+    final_score_text = f"  {home_team_game_score} - {away_team_game_score}  "
      
-    bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, final_score_text, text_color)
+    bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, "", text_color)
+ 
+    final_score_clip = TextClip(font=FONT_PATH, text=final_score_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_end, home_game_score_clip = create_final_team_with_score_clip(home_team, home_team_match_score_end, home_team_game_score, home_team_logo_path, text_color)
+    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_end, away_game_score_clip = create_final_team_with_score_clip(away_team, away_team_match_score_end, away_team_game_score, away_team_logo_path, text_color)
 
-    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_start = create_team_clip(home_team, home_team_match_score_end, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
-    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_start = create_team_clip(away_team, away_team_match_score_end, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME * 2)
+    scores_clip = clips_array([[home_team_logo_clip_start, home_team_name_clip_start, final_score_clip, away_team_name_clip_start, away_team_logo_clip_start],
+                               ]
+                               ).with_position(("center", "center")).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME * 2).with_start(STANDARD_TRANSITION_TIME * 2)
 
     closing_screen = CompositeVideoClip([
         color_background, 
         bdl_logo_clip,
         header_text_clip, 
         sub_header_text_clip,
-        final_score_fade_in_clip,
-        final_score_clip,
-        home_team_logo_clip_start,
-        away_team_logo_clip_start,
-        home_team_name_clip_start,
-        away_team_name_clip_start,
-        home_team_match_score_clip_start,
-        away_team_match_score_clip_start,
+        scores_clip,
         ])
     return closing_screen
 
@@ -349,12 +339,15 @@ def process_game(output_path, game):
 
     game_path = game["video_path"]
     game_path = static_test_clip_path
+
+
     game_video = get_game_video_with_overlay(game) # Original video - later it'll have team info
     
     # Get some info about the game video so we can apply it to the opening and closing screens
     game_video_width, game_video_height = game_video.size
     game_video_fps = game_video.fps
     game_video_duration = game_video.duration
+    trimmed_game_video_duration = game_video_duration - OPENING_SCREEN_DURATION
 
 
 
@@ -362,20 +355,9 @@ def process_game(output_path, game):
     closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
 
     opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
-    # add_team_name_to_video(ligame["video_path"], game["home_team"], game["away_team"])
-    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(game_video_duration).resized((game_video.size))
+    closing_screen = create_ending_screen(game).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(trimmed_game_video_duration).resized((game_video.size))
 
-   
-    # opening_screen_slideout = slide_out(opening_screen, STANDARD_TRANSITION_TIME, 1080, 0)
-    # closing_screen_slidein = slide_out(closing_screen, STANDARD_TRANSITION_TIME, 1080, 1)
 
-    # Add the opening screen to the beginning of the video
-    # full_video = concatenate_videoclips([
-    #     opening_screen, 
-    #     # opening_screen_slideout,
-    #     game_video, 
-    #     # closing_screen_slidein,
-    #     closing_screen])   
     full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
     full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24)
 
