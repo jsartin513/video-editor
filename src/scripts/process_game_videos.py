@@ -222,19 +222,15 @@ def create_final_team_with_score_clip(team_name, match_score, game_score, logo_p
     logo_clip = (
         ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
         .with_mask(circular_mask)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
     )
     team_name_clip = (
         TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
     )
     match_score_clip = (
         TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
     )
     game_score_clip = (
         TextClip(font=FONT_PATH, text=game_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)])
     )
     return logo_clip, team_name_clip, match_score_clip, game_score_clip
 
@@ -343,12 +339,15 @@ def process_game(output_path, game):
 
     game_path = game["video_path"]
     game_path = static_test_clip_path
+
+
     game_video = get_game_video_with_overlay(game) # Original video - later it'll have team info
     
     # Get some info about the game video so we can apply it to the opening and closing screens
     game_video_width, game_video_height = game_video.size
     game_video_fps = game_video.fps
     game_video_duration = game_video.duration
+    trimmed_game_video_duration = game_video_duration - OPENING_SCREEN_DURATION
 
 
 
@@ -356,7 +355,7 @@ def process_game(output_path, game):
     closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
 
     opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
-    closing_screen = create_ending_screen(game).with_effects([vfx.SlideIn(STANDARD_TRANSITION_TIME, "top")]).with_start(game_video_duration).resized((game_video.size))
+    closing_screen = create_ending_screen(game).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(trimmed_game_video_duration).resized((game_video.size))
 
 
     full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
