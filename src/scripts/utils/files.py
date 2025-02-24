@@ -18,6 +18,19 @@ def get_video_length(filename):
     return float(result.stdout)
 
 
+def merge_list_of_videos(video_files, output_file):
+    """Merge a list of video files into one video file.
+
+    Args:
+        video_files: A list of video files to merge.
+        output_file: The name of the output file.
+    """
+    with open("videos.txt", "w") as f:
+        for video in video_files:
+            f.write(f"file '{video}'\n")
+
+    subprocess.run(["ffmpeg", "-f", "concat", "-safe", "0", "-i", "videos.txt", "-c", "copy", output_file])
+
 def list_files_of_type_sorted_by_date(directory, filetype="mp4"):
   """Lists files in a directory sorted by modification date if they are of a certain type.
 
