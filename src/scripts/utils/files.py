@@ -18,8 +18,8 @@ def get_video_length(filename):
     return float(result.stdout)
 
 
-def list_files_sorted_by_date(directory):
-  """Lists files in a directory sorted by modification date.
+def list_files_of_type_sorted_by_date(directory, filetype="mp4"):
+  """Lists files in a directory sorted by modification date if they are of a certain type.
 
   Args:
     directory: The path to the directory.
@@ -27,8 +27,8 @@ def list_files_sorted_by_date(directory):
   Returns:
     A list of file names sorted by modification date (oldest to newest).
   """
-  files = os.listdir(directory)
-  files_with_time = [(f, os.path.getctime(os.path.join(directory, f))) for f in files]
+  files = [f for f in os.listdir(directory) if f.lower().endswith(filetype)]
+  files_with_time = [(f, os.path.getmtime(os.path.join(directory, f))) for f in files]
 
   log(f"Files with time: {sorted(files_with_time, key=lambda x: x[1])}")
   
