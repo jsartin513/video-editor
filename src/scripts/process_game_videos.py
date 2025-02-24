@@ -122,18 +122,26 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
     return logo_clip, team_name_clip
 
 
-def get_game_video_with_overlay(game):
-    game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
-    game_video = VideoFileClip(game["video_path"]).with_start(game_start_time).with_layer_index(10)
-    game_duration = game_video.duration
+def get_game_video_with_overlay(game, start_time):
+    game_video_paths = game["video_path"]
 
+    game_start_time = start_time
+
+    videos_with_overlay = []
+
+    for path in game_video_paths:
+        game_video = VideoFileClip(path).with_start(game_start_time).with_layer_index(10)
+        game_duration = game_video.duration
     
-    home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
-    away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], game_duration)
+        home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
+        away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], game_duration)
 
-    team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
+        team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
 
-    video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
+        video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
+
+        videos_with_overlay.append(video_with_overlay)
+        start_time += game_duration
     return video_with_overlay
     
 
@@ -329,7 +337,8 @@ def process_game(output_path, game):
     game_path = static_test_clip_path
 
 
-    game_video = get_game_video_with_overlay(game) # Original video - later it'll have team info
+    game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
+    game_video = get_game_video_with_overlay(game, game_start_time) # Original video - later it'll have team info
     
     # Get some info about the game video so we can apply it to the opening and closing screens
     game_video_width, game_video_height = game_video.size
