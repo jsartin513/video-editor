@@ -124,9 +124,7 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
 
 def get_game_video_with_overlay(game):
     game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
-    static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
-    game_video = VideoFileClip(game["video_path"]).with_start(game_start_time)
-    game_video = VideoFileClip(static_test_clip_path).with_start(game_start_time).with_layer_index(10) 
+    game_video = VideoFileClip(game["video_path"]).with_start(game_start_time).with_layer_index(10)
     game_duration = game_video.duration
 
     
@@ -174,7 +172,7 @@ def create_opening_screen(output_directory, game):
     # opening_screen.write_videofile(output_path, codec="libx264", fps=24)
     return opening_screen
 
-def create_team_clip(team_name, match_score, logo_path, text_color, side="left", start_time=0):
+def create_team_clip(team_name, logo_path, text_color, side="left", start_time=0):
     duration = OPENING_SCREEN_DURATION - start_time
     # Add position based on which side it is (left or right)
     if side == "left":
@@ -198,14 +196,9 @@ def create_team_clip(team_name, match_score, logo_path, text_color, side="left",
         .with_position(team_name_position, relative=True).with_duration(duration)
         .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
-    match_score_clip = (
-        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
-        .with_position(match_score_position, relative=True).with_duration(duration - STANDARD_TRANSITION_TIME)
-        .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time + STANDARD_TRANSITION_TIME)
-    )
-    return logo_clip, team_name_clip, match_score_clip
+    return logo_clip, team_name_clip
 
-def create_final_team_with_score_clip(team_name, match_score, game_score, logo_path, text_color, side="left", start_time=0):
+def create_final_team_with_score_clip(team_name, game_score, logo_path, text_color, side="left", start_time=0):
     duration = OPENING_SCREEN_DURATION - start_time
     # Add position based on which side it is (left or right)
     if side == "left":
@@ -226,13 +219,10 @@ def create_final_team_with_score_clip(team_name, match_score, game_score, logo_p
     team_name_clip = (
         TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
     )
-    match_score_clip = (
-        TextClip(font=FONT_PATH, text=match_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
-    )
     game_score_clip = (
         TextClip(font=FONT_PATH, text=game_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
     )
-    return logo_clip, team_name_clip, match_score_clip, game_score_clip
+    return logo_clip, team_name_clip, game_score_clip
 
 def create_header_text_clips(header_text, subheader_text, round_text, text_color):
     header_font_size = 72
@@ -266,8 +256,8 @@ def create_simple_opening_screen(game):
 
     bdl_logo_clip, header_text_clip, sub_header_text_clip, round_text_fade_in_clip, round_text_clip = create_header_text_clips(header_text, sub_header_text, round_text, text_color)
 
-    home_team_logo_clip, home_team_name_clip, home_team_match_score_clip = create_team_clip(home_team, home_team_match_score, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
-    away_team_logo_clip, away_team_name_clip, away_team_match_score_clip = create_team_clip(away_team, away_team_match_score, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
+    home_team_logo_clip, home_team_name_clip = create_team_clip(home_team, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
+    away_team_logo_clip, away_team_name_clip = create_team_clip(away_team, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
 
     vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME)
 
@@ -282,8 +272,6 @@ def create_simple_opening_screen(game):
         away_team_logo_clip,
         home_team_name_clip,
         away_team_name_clip,
-        home_team_match_score_clip,
-        away_team_match_score_clip,
         vs_clip
         ]).with_layer_index(20)
     return opening_screen
@@ -300,8 +288,8 @@ def create_ending_screen(game):
     away_team_logo_path = game["away_team_logo_path"]
     home_team_match_score_start = "0-0-0" # Might be needed once we have dynamic scores
     away_team_match_score_start = "0-0-0"
-    home_team_game_score = "1" # This will be dynamic
-    away_team_game_score = "2" # This will be dynamic
+    home_team_game_score = game["home_team_score"]
+    away_team_game_score = game["away_team_score"]
     home_team_match_score_end = "0-1-0" # This will be dynamic
     away_team_match_score_end = "1-0-0" # This will be dynamic
 
@@ -310,8 +298,8 @@ def create_ending_screen(game):
     bdl_logo_clip, header_text_clip, sub_header_text_clip, final_score_fade_in_clip, final_score_clip = create_header_text_clips(HEADER_TEXT, SUBHEADER_TEXT, "", text_color)
  
     final_score_clip = TextClip(font=FONT_PATH, text=final_score_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
-    home_team_logo_clip_start, home_team_name_clip_start, home_team_match_score_clip_end, home_game_score_clip = create_final_team_with_score_clip(home_team, home_team_match_score_end, home_team_game_score, home_team_logo_path, text_color)
-    away_team_logo_clip_start, away_team_name_clip_start, away_team_match_score_clip_end, away_game_score_clip = create_final_team_with_score_clip(away_team, away_team_match_score_end, away_team_game_score, away_team_logo_path, text_color)
+    home_team_logo_clip_start, home_team_name_clip_start, home_game_score_clip = create_final_team_with_score_clip(home_team, home_team_game_score, home_team_logo_path, text_color)
+    away_team_logo_clip_start, away_team_name_clip_start, away_game_score_clip = create_final_team_with_score_clip(away_team, away_team_game_score, away_team_logo_path, text_color)
 
     scores_clip = clips_array([[home_team_logo_clip_start, home_team_name_clip_start, final_score_clip, away_team_name_clip_start, away_team_logo_clip_start],
                                ]

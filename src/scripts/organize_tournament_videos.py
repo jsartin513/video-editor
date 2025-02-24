@@ -7,7 +7,7 @@ from utils.files import get_video_length, list_files_of_type_sorted_by_date, mer
 from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
 from utils.utils import log, format_team_name_for_filename
 
-MISSED_GAME_INDICES = []
+MISSED_GAME_INDICES = [5]
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
@@ -20,6 +20,7 @@ def rename_videos(directory_name, games_list, dry_run=False):
     videos = get_likely_ordered_game_filenames(directory_name)
     idx_offset = 0
     for game_idx, video_list in enumerate(videos):
+        game_video_paths = []
         if game_idx in MISSED_GAME_INDICES:
             idx_offset = 1
         game = games_list[game_idx + idx_offset] # In case any games are missed
@@ -37,7 +38,8 @@ def rename_videos(directory_name, games_list, dry_run=False):
                 shutil.copy(old_video_path, new_video_path)
             log(f"Copied {video_list} to {new_video_path}")
             game["video_path"] = new_video_path
-            video_paths.append(new_video_path)
+            game_video_paths.append(new_video_path)
+        video_paths.append(game_video_paths)
 
     return output_directory, video_paths
 
@@ -80,12 +82,18 @@ def get_likely_ordered_game_filenames(directory_name):
 
 
 def create_metadata_file(schedule, output_path, video_paths):
+    log(f"Creating metadata file at {output_path}/metadata.json")
+    log(f"video_paths: {video_paths}")
     metadata = []
+    idx_offset = 0
     for idx, game in enumerate(schedule):
+        if idx in MISSED_GAME_INDICES:
+            idx_offset = idx_offset - 1
+            continue
         metadata.append({
             "home_team": game["home_team"],
             "away_team": game["away_team"],
-            "video_path": video_paths[idx],
+            "video_path": video_paths[idx + idx_offset],
             "home_team_score": game.get("home_team_score", None),
             "away_team_score": game.get("away_team_score", None),
             "round": game["round"],
