@@ -1,5 +1,7 @@
+import pprint
+
 def log(message):
-    print(message)
+    pprint.pprint(message)
 
 
 def format_team_name_for_filename(team_name):
