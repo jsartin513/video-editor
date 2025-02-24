@@ -122,6 +122,9 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
     return logo_clip, team_name_clip
 
 
+# @param start_time: When to begin playing this clip in the final video, after any intros
+# @param game: The game object with all the information about the game
+# @return: A video clip with the game video, includign merged clips, and overlay information
 def get_game_video_with_overlay(game, start_time):
     game_video_paths = game["video_path"]
 
