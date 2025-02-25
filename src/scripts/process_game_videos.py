@@ -19,8 +19,8 @@ LOGO_ICON_MAX_WIDTH = 180
 LOGO_ICON_MIN_WIDTH = 120
 TEAM_NAME_MAX_FONT_SIZE = 72
 TEAM_NAME_MIN_FONT_SIZE = 36
-LOGO_ICON_IN_GAME_WIDTH = 80
-TEAM_NAME_IN_GAME_FONT_SIZE = 12
+LOGO_ICON_IN_GAME_WIDTH = 100
+TEAM_NAME_IN_GAME_FONT_SIZE = 24  
 
 STARTING_LOGO_POSITION = (0.11, 0.2)
 STARTING_TEAM_NAME_POSITION = (0.205, 0.25)
@@ -124,28 +124,32 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
 
 # @param start_time: When to begin playing this clip in the final video, after any intros
 # @param game: The game object with all the information about the game
+# @param trim_time: How much time to trim from the beginning of the game video
 # @return: A video clip with the game video, includign merged clips, and overlay information
-def get_game_video_with_overlay(game, start_time):
+def get_game_video_with_overlay(game, start_time, trim_time=0):
     game_video_paths = game["video_path"]
-
     game_start_time = start_time
-
     videos_with_overlay = []
 
     for path in game_video_paths:
-        game_video = VideoFileClip(path).with_start(game_start_time).with_layer_index(10)
+        if trim_time > 0:
+            game_video = VideoFileClip(path).subclipped(trim_time, trim_time + 20).with_start(game_start_time).with_layer_index(10) # End time is just for testing this one
+            trim_time = 0
+        else:
+            game_video = VideoFileClip(path).subclipped(0, 20).with_layer_index(10)
         game_duration = game_video.duration
     
         home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
         away_team_logo_clip, away_team_name_clip = get_team_name_and_logo_for_video_overlay(game["away_team"], game["away_team_logo_path"], game_duration)
 
-        team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration).with_start(game_start_time)
+        team_info_panel = clips_array([[home_team_logo_clip, home_team_name_clip], [away_team_logo_clip, away_team_name_clip]], bg_color=(0, 0, 0)).with_layer_index(15).with_position(("right", "center")).with_duration(game_duration)
 
         video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
 
         videos_with_overlay.append(video_with_overlay)
-        start_time += game_duration
-    return video_with_overlay
+
+    compiled_game_video = concatenate_videoclips(videos_with_overlay)
+    return compiled_game_video
     
 
 # Create opening screen with "standard" transitions using the variables described above
@@ -339,9 +343,13 @@ def process_game(output_path, game):
     game_path = game["video_path"]
     game_path = static_test_clip_path
 
+    trim_time = game.get("trim_time", 0)
+
 
     game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
-    game_video = get_game_video_with_overlay(game, game_start_time) # Original video - later it'll have team info
+    transition_end_time = game_start_time
+    trim_time = trim_time - transition_end_time # Adjust the trim time to account for the transition time
+    game_video = get_game_video_with_overlay(game, 0, trim_time) # Original video - later it'll have team info
     
     # Get some info about the game video so we can apply it to the opening and closing screens
     game_video_width, game_video_height = game_video.size
@@ -359,7 +367,7 @@ def process_game(output_path, game):
 
 
     full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
-    full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24)
+    full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24, audio=True, audio_codec="aac", temp_audiofile="temp-audio.m4a")
 
     log(f"Game video details: {game}")
     log(f"Game video width: {game_video_width}")
@@ -395,5 +403,6 @@ if __name__ == '__main__':
 
     # Pick one random game of the 10 for testing
     random_game_number = math.floor(random.random() * 10)
+    random_game_number = 5
     games = [games[random_game_number]]
     run(output_path, games)

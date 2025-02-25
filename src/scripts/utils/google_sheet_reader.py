@@ -48,7 +48,7 @@ def parse_schedule(csv_data, add_logo_paths=True):
                 'home_team': row[COURT_3_HEADER_TEXT],
                 'home_team_score': row[COURT_3_SCORE_TEXT],
                 
-            })
+            })    
             if add_logo_paths:
                 schedule[COURT_1_HEADER_TEXT][-1]['home_team_logo_path'] = get_logo_path(row[COURT_1_HEADER_TEXT])
                 schedule[COURT_2_HEADER_TEXT][-1]['home_team_logo_path'] = get_logo_path(row[COURT_2_HEADER_TEXT])
