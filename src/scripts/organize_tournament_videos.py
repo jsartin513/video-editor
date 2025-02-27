@@ -3,11 +3,11 @@ import json
 import os
 import shutil
 
-from utils.files import get_video_length, list_files_of_type_sorted_by_date, merge_list_of_videos
+from utils.files import get_video_length, list_files_of_type_sorted_by_date, get_video_start_and_end_timestamps
 from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
 from utils.utils import log, format_team_name_for_filename
 
-MISSED_GAME_INDICES = [5]
+MISSED_GAME_INDICES = []
 
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
@@ -22,8 +22,13 @@ def rename_videos(directory_name, games_list, dry_run=False):
     for game_idx, video_list in enumerate(videos):
         game_video_paths = []
         if game_idx in MISSED_GAME_INDICES:
-            idx_offset = 1
-        game = games_list[game_idx + idx_offset] # In case any games are missed
+            idx_offset = idx_offset + 1
+            continue
+        try:
+            game = games_list[game_idx - idx_offset] # In case any games are missed
+        except IndexError:
+            log(f"Game {game_idx} was missed")
+            break
         home_team = game["home_team"]
         away_team = game["away_team"]
         round = game["round"]
@@ -58,7 +63,7 @@ def get_likely_ordered_game_filenames(directory_name):
         video_suffix = video[4:8]
 
         if filenames_in_this_recording:
-            if video_suffix == filenames_in_this_recording[-1][4:8]: # Still creating the list for this recording
+            if video_suffix == filenames_in_this_recording[-1][4:8] and len(filenames_in_this_recording) < 3: # Still creating the list for this recording
                 filenames_in_this_recording.append(video)
                 log(f"Appending {video} to filenames_in_this_recording")
             else: # This is a new recording, so we need to update the game_video_filenames with a tuple of each filename in this recording
@@ -79,6 +84,19 @@ def get_likely_ordered_game_filenames(directory_name):
 
     log(f"Game video filenames: {game_video_filenames}")
     return game_video_filenames
+
+VIDEOPATH_WITH_TIMES = "/Users/MrsHazmat/throw_down_3_recordings/court_1_rr/processed_videos/final_videos"
+def get_start_times_from_hardcoded_file_path():
+    start_and_end_times_by_round = {}
+    for final_video in list_files_of_type_sorted_by_date(VIDEOPATH_WITH_TIMES):
+        log(f"Final video: {final_video}")
+        start_time, end_time = get_video_start_and_end_timestamps(os.path.join(VIDEOPATH_WITH_TIMES, final_video))[0]
+        log(f"Start time: {start_time}")
+        log(f"End time: {end_time}")
+        round_number = final_video.split("_")[-2]
+        start_and_end_times_by_round[round_number] = (start_time, end_time)
+    return start_and_end_times_by_round
+
 
 
 def create_metadata_file(schedule, output_path, video_paths):
@@ -108,6 +126,8 @@ def create_metadata_file(schedule, output_path, video_paths):
 def run(directory_name, ordered_games, dry_run=False):
     # Rename the videos in the directory
     output_path, video_paths = rename_videos(directory_name, ordered_games, dry_run)
+    # get_start_times_from_hardcoded_file_path()
+    # Create a metadata file
     create_metadata_file(ordered_games, output_path, video_paths)
     
 
