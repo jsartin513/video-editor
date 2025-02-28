@@ -4,7 +4,7 @@ import os
 import shutil
 
 from utils.files import get_video_length, list_files_of_type_sorted_by_date, get_video_start_and_end_timestamps
-from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
+from utils.google_sheet_reader import get_parsed_schedule
 from utils.utils import log, format_team_name_for_filename
 
 MISSED_GAME_INDICES = []
@@ -139,8 +139,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    sheet_data = get_google_sheet_data()
-    schedule = parse_schedule(sheet_data)
+    schedule = get_parsed_schedule()
 
     # for court_number in range(1, 4):
     court_name = f"Court {args.court}"

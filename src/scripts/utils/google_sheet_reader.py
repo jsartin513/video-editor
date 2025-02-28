@@ -2,7 +2,8 @@ import requests
 import csv
 from io import StringIO
 
-GOOGLE_SHEET_URL = "https://docs.google.com/spreadsheets/d/1CC5uA0ZrP39eM6OC0JgE8JlwDrqpr4-ykp6kIKtgHXQ/export?format=csv&gid=182568368"
+ROUND_ROBIN_SHEET_URL = "https://docs.google.com/spreadsheets/d/1CC5uA0ZrP39eM6OC0JgE8JlwDrqpr4-ykp6kIKtgHXQ/export?format=csv&gid=182568368"
+BRACKET_SHEET_URL = "https://docs.google.com/spreadsheets/d/1CC5uA0ZrP39eM6OC0JgE8JlwDrqpr4-ykp6kIKtgHXQ/edit?gid=2111325620#gid=2111325620"
 COURT_1_HEADER_TEXT = "Court 1"
 COURT_2_HEADER_TEXT = "Court 2"
 COURT_3_HEADER_TEXT = "Court 3"
@@ -16,8 +17,14 @@ def get_logo_path(team_name):
     return f"src/static/{updated_team_name}_logo.png"
 
 
-def get_google_sheet_data():
-    response = requests.get(GOOGLE_SHEET_URL)
+
+def get_parsed_schedule():
+    sheet_data = get_google_sheet_data(ROUND_ROBIN_SHEET_URL)
+    schedule = parse_schedule(sheet_data)
+    return schedule
+
+def get_google_sheet_data(sheet_url):
+    response = requests.get(sheet_url)
     response.raise_for_status()  # Ensure we notice bad responses
     csv_data = response.text
     return csv_data
