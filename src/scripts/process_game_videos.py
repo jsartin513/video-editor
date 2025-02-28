@@ -8,6 +8,7 @@ import argparse
 
 from utils.utils import log, format_team_name_for_filename
 from utils.moviepy import function_for_position
+from utils.files import concatenate_mp4_files, trim_mp4_file
 
 
 FONT_PATH = "./font/font.ttf"
@@ -126,17 +127,17 @@ def get_team_name_and_logo_for_video_overlay(team_name, logo_path, duration):
 # @param game: The game object with all the information about the game
 # @param trim_time: How much time to trim from the beginning of the game video
 # @return: A video clip with the game video, includign merged clips, and overlay information
-def get_game_video_with_overlay(game, start_time, trim_time=0):
+def get_game_video_with_overlay(game, start_time, trim_time=0, end_trim_time=0):
     game_video_paths = game["video_path"]
     game_start_time = start_time
     videos_with_overlay = []
 
     for path in game_video_paths:
         if trim_time > 0:
-            game_video = VideoFileClip(path).subclipped(trim_time, trim_time + 20).with_start(game_start_time).with_layer_index(10) # End time is just for testing this one
+            game_video = VideoFileClip(path).subclipped(trim_time).with_start(game_start_time).with_layer_index(10) # End time is just for testing this one
             trim_time = 0
         else:
-            game_video = VideoFileClip(path).subclipped(0, 20).with_layer_index(10)
+            game_video = VideoFileClip(path).with_layer_index(10)
         game_duration = game_video.duration
     
         home_team_logo_clip, home_team_name_clip = get_team_name_and_logo_for_video_overlay(game["home_team"], game["home_team_logo_path"], game_duration)
@@ -147,6 +148,9 @@ def get_game_video_with_overlay(game, start_time, trim_time=0):
         video_with_overlay = CompositeVideoClip([game_video, team_info_panel])
 
         videos_with_overlay.append(video_with_overlay)
+
+    if end_trim_time > 0:
+        videos_with_overlay[-1] = videos_with_overlay[-1].subclipped(0, end_trim_time)
 
     compiled_game_video = concatenate_videoclips(videos_with_overlay)
     return compiled_game_video
@@ -203,12 +207,12 @@ def create_team_clip(team_name, logo_path, text_color, side="left", start_time=0
     circular_mask = ImageClip(get_circular_mask(), is_mask=True)
     logo_clip = (
         ImageClip(logo_path, duration=duration).resized(width=LOGO_ICON_MAX_WIDTH)
-        .with_mask(circular_mask).with_position(logo_position, relative=True)
+        .with_mask(circular_mask)
         .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
     team_name_clip = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
-        .with_position(team_name_position, relative=True).with_duration(duration)
+        TextClip(font=FONT_PATH, text=f"  {team_name}  ", font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color)
+        .with_duration(duration)
         .with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(start_time)
     )
     return logo_clip, team_name_clip
@@ -232,10 +236,10 @@ def create_final_team_with_score_clip(team_name, game_score, logo_path, text_col
         .with_mask(circular_mask)
     )
     team_name_clip = (
-        TextClip(font=FONT_PATH, text=team_name, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+        TextClip(font=FONT_PATH, text=f"  {team_name}  ", font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
     )
     game_score_clip = (
-        TextClip(font=FONT_PATH, text=game_score, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
+        TextClip(font=FONT_PATH, text=f"  {game_score}  ", font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color, duration=duration)
     )
     return logo_clip, team_name_clip, game_score_clip
 
@@ -259,12 +263,12 @@ def create_simple_opening_screen(game):
     away_team_logo_path = game["away_team_logo_path"]
     home_team_match_score = "0-0-0"
     away_team_match_score = "0-0-0"
-    vs_text = "vs"
+    vs_text = "  vs  "
     
     background_color =  BLUE_COLOR #Dark blue
     text_color = GOLD_COLOR
 
-    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION)
+    color_background = ColorClip(size=(1920, 1080), color=background_color, duration=OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME)
     header_text = HEADER_TEXT
     sub_header_text = SUBHEADER_TEXT
     round_text = f"Round Robin Round {game['round']}"
@@ -274,7 +278,9 @@ def create_simple_opening_screen(game):
     home_team_logo_clip, home_team_name_clip = create_team_clip(home_team, home_team_logo_path, text_color, side="left", start_time=STANDARD_TRANSITION_TIME)
     away_team_logo_clip, away_team_name_clip = create_team_clip(away_team, away_team_logo_path, text_color, side="right", start_time=STANDARD_TRANSITION_TIME)
 
-    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_position((0.5, 0.65), relative=True).with_start(STANDARD_TRANSITION_TIME).with_duration(OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME)
+    vs_clip = TextClip(font=FONT_PATH, text=vs_text, font_size=TEAM_NAME_MIN_FONT_SIZE, color=text_color).with_start(STANDARD_TRANSITION_TIME).with_duration(OPENING_SCREEN_DURATION)
+
+    starting_clip = clips_array([[home_team_logo_clip, home_team_name_clip, vs_clip, away_team_name_clip, away_team_logo_clip]]).with_position(("center", 0.65), relative=True).with_duration(OPENING_SCREEN_DURATION)
 
     opening_screen = CompositeVideoClip([
         color_background, 
@@ -283,11 +289,7 @@ def create_simple_opening_screen(game):
         sub_header_text_clip,
         round_text_fade_in_clip,
         round_text_clip,
-        home_team_logo_clip,
-        away_team_logo_clip,
-        home_team_name_clip,
-        away_team_name_clip,
-        vs_clip
+        starting_clip
         ]).with_layer_index(20)
     return opening_screen
 
@@ -331,62 +333,100 @@ def create_ending_screen(game):
 
 
     
-
+# Returns an ordered list of filenames, including opening screen, game videos, and closing screen
 def process_game(output_path, game):
     home_team = game["home_team"]
     away_team = game["away_team"]
     formatted_home_team = format_team_name_for_filename(home_team)
     formatted_away_team = format_team_name_for_filename(away_team)
-    static_test_clip_path = "src/static/tjl_clip_30_sec.mp4" 
 
 
-    game_path = game["video_path"]
-    game_path = static_test_clip_path
+    game_path_list = game["video_path"]
+    first_game_path = game_path_list[0]
+    last_game_path = game_path_list[-1]
 
     trim_time = game.get("trim_time", 0)
+    end_trim_time = game.get("end_trim_time", 0)
 
 
     game_start_time = OPENING_SCREEN_DURATION - STANDARD_TRANSITION_TIME
     transition_end_time = game_start_time
     trim_time = trim_time - transition_end_time # Adjust the trim time to account for the transition time
-    game_video = get_game_video_with_overlay(game, 0, trim_time) # Original video - later it'll have team info
+    # game_video = get_game_video_with_overlay(game, 0, trim_time) # Original video - later it'll have team info
+
+    original_opening_video_duration = VideoFileClip(first_game_path).duration
+
+    # First ten seconds of game video to go under the opening screen
+    opening_screen_game_video = VideoFileClip(first_game_path).subclipped(trim_time, trim_time + OPENING_SCREEN_DURATION).with_start(0).with_layer_index(10)
+
+    end_duration = OPENING_SCREEN_DURATION + end_trim_time
+    # Last ten seconds of game video to go under the closing screen
+    closing_screen_game_video = VideoFileClip(last_game_path).subclipped(-end_duration, end_trim_time).with_start(0).with_layer_index(10)
+
     
     # Get some info about the game video so we can apply it to the opening and closing screens
-    game_video_width, game_video_height = game_video.size
-    game_video_fps = game_video.fps
-    game_video_duration = game_video.duration
-    trimmed_game_video_duration = game_video_duration - OPENING_SCREEN_DURATION
+    game_video_size = opening_screen_game_video.size
+    game_video_fps = opening_screen_game_video.fps
+    # game_video_duration = game_video.duration
+    # trimmed_game_video_duration = game_video_duration - OPENING_SCREEN_DURATION
 
 
 
     opening_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_opening_screen.mp4"
     closing_screen_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_closing_screen.mp4"
 
-    opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video.size))
-    closing_screen = create_ending_screen(game).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).with_start(trimmed_game_video_duration).resized((game_video.size))
+    opening_screen = create_simple_opening_screen(game).with_effects([vfx.SlideOut(STANDARD_TRANSITION_TIME, "top")]).resized((game_video_size))
+    closing_screen = create_ending_screen(game).with_effects([vfx.CrossFadeIn(STANDARD_TRANSITION_TIME)]).resized((game_video_size)).with_layer_index(20)
 
 
-    full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
-    full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24, audio=True, audio_codec="aac", temp_audiofile="temp-audio.m4a")
+    full_opening_screen = CompositeVideoClip([opening_screen, opening_screen_game_video]).with_duration(OPENING_SCREEN_DURATION)
+    full_closing_screen = CompositeVideoClip([closing_screen_game_video, closing_screen]).with_duration(OPENING_SCREEN_DURATION)
+    # full_video = CompositeVideoClip([opening_screen, game_video, closing_screen])
+    # full_video.write_videofile(f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_full.mp4", codec="libx264", fps=24, audio=True, audio_codec="aac", temp_audiofile="temp-audio.m4a")
 
     log(f"Game video details: {game}")
-    log(f"Game video width: {game_video_width}")
-    log(f"Game video height: {game_video_height}")
-    log(f"Final video details: {full_video}")
-    log(f"Final video width: {full_video.size[0]}")
-    log(f"Final video height: {full_video.size[1]}")
-    log(f"Final video duration: {full_video.duration}")
-    log(f"Final video fps: {full_video.fps}")
+    log(f"Game video size: {game_video_size}")
+    # log(f"Final video details: {full_video}")
+    # log(f"Final video width: {full_video.size[0]}")
+    # log(f"Final video height: {full_video.size[1]}")
+    # log(f"Final video duration: {full_video.duration}")
+    # log(f"Final video fps: {full_video.fps}")
 
-    # opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
+    full_opening_screen.write_videofile(opening_screen_filename, codec="libx264", fps=24)
 
-    # closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
+    full_closing_screen.write_videofile(closing_screen_filename, codec="libx264", fps=24)
 
+
+    # We want to concatenate all of the videos together. 
+    # We must trim the first and last videos to match up with the opening and closing screens.
+    # Any other videos can be concatenated as is.
+
+    first_video_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_trimmed_first_game.mp4"
+    last_video_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_trimmed_last_game.mp4"
+
+
+
+    # Trim the first and last videos
+    trim_mp4_file(first_game_path, trim_time + OPENING_SCREEN_DURATION, original_opening_video_duration, first_video_filename)
+    
+    end_file_trim_time = closing_screen_game_video.duration - end_trim_time
+    trim_mp4_file(last_game_path, 0, end_file_trim_time, last_video_filename)
+
+
+    concatenaed_filename = f"{output_path}/{formatted_home_team}_vs_{formatted_away_team}_concatenaed.mp4"
+    #Just for today, I know these are the only two videos in the list
+    # Concatenate all the videos together
+    concatenate_mp4_files([opening_screen_filename, first_video_filename, last_video_filename, closing_screen_filename], concatenaed_filename)
+
+    return concatenaed_filename
 
 def run(output_path, games):
     for game in games:
         log(f"Processing game at {game['video_path']}")
-        process_game(output_path, game)
+        # Create opening and closing screens
+        concatenaed_filename =  process_game(output_path, game)
+        log(f"Game video processed at {concatenaed_filename}")
+        
 
 
 if __name__ == '__main__':
@@ -403,6 +443,7 @@ if __name__ == '__main__':
 
     # Pick one random game of the 10 for testing
     random_game_number = math.floor(random.random() * 10)
-    random_game_number = 5
+    # random_game_number = 6
+    # del games[random_game_number] # For second run, bc we already ran it once
     games = [games[random_game_number]]
     run(output_path, games)
