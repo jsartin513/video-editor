@@ -72,6 +72,36 @@ def parse_bracket(csv_data):
                     "subround": subround
                 }
                 games.append(game)
+    
+    for round_name, round_games in finals.items():
+        if round_name == "Finals":
+            home_team = round_games[0]
+            away_team = round_games[3]
+            court = "court 2"
+            subround = "Championship"
+            game = {
+                "round": round_name,
+                "home_team": home_team,
+                "away_team": away_team,
+                "court": court,
+                "subround": subround
+            }
+            games.append(game)
+        else:
+            # Away team is last in the list
+            # home team is second to last
+            home_team = round_games[-2]
+            away_team = round_games[-1]
+            court = "court 3"
+            subround = "Third Place"
+            game = {
+                "round": "Finals",
+                "home_team": home_team,
+                "away_team": away_team,
+                "court": court,
+                "subround": subround
+            }
+            games.append(game)
 
     return games
 
