@@ -55,17 +55,24 @@ def parse_bracket(csv_data):
     for round_name, round_games in bracket.items():
         for idx, game_piece in enumerate(round_games):
             if idx % 3 == 0:
-                try:
-                        game = {
-                            "round": round_name,
-                            "home_team": round_games[idx],
-                            "court": round_games[idx + 1],
-                            "away_team": round_games[idx + 2]
-                        }
-                        games.append(game)
-                except IndexError:
-                    print(f"IndexError: {round_name}, {round_games}")
-                    pass
+                home_team = game_piece
+                court_and_subround = round_games[idx + 1]
+                away_team = round_games[idx + 2]
+                if "series" in court_and_subround:
+                    court = court_and_subround.split("(")[0]
+                    subround = court_and_subround.split("(")[1][:-1]
+                else:
+                    court = court_and_subround
+                    subround = None
+                game = {
+                    "round": round_name,
+                    "home_team": home_team,
+                    "away_team": away_team,
+                    "court": court,
+                    "subround": subround
+                }
+                games.append(game)
+
     return games
 
 
