@@ -4,7 +4,7 @@ import os
 import shutil
 
 from utils.files import get_video_length, list_files_of_type_sorted_by_date, get_video_start_and_end_timestamps
-from utils.google_sheet_reader import get_google_sheet_data, parse_schedule
+from utils.google_sheet_reader import get_parsed_schedule, get_parsed_bracket
 from utils.utils import log, format_team_name_for_filename
 
 MISSED_GAME_INDICES = []
@@ -135,16 +135,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
     parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
     parser.add_argument('--court', type=int, help='The court number')
+    parser.add_argument('--bracket', action='store_true', help='If true, the games are bracket games')
     parser.add_argument('--dry-run', action='store_true', help='If true, do not copy the files, just print the output')
 
     args = parser.parse_args()
-
-    sheet_data = get_google_sheet_data()
-    schedule = parse_schedule(sheet_data)
-
-    # for court_number in range(1, 4):
     court_name = f"Court {args.court}"
-    ordered_games = schedule[court_name]
+
+    if args.bracket:
+        schedule = get_parsed_bracket()
+        games_for_court = [game for game in schedule if game["court"].strip() == court_name.lower()]
+        round_mapping = {
+            "Round 1": 1,
+            "Quarters": 2,
+            "Semis": 3,
+            "Finals": 4}
+        ordered_games = sorted(games_for_court, key=lambda x: (round_mapping[x["round"]], x["subround"]))
+    else:
+        schedule = get_parsed_schedule()
+        ordered_games = schedule[court_name]
 
     # video_paths =rename_videos(args.directory_name, ordered_games)
     output_path = f"{args.directory_name}/processed_videos"
