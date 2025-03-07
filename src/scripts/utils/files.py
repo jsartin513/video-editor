@@ -60,7 +60,6 @@ def get_video_start_and_end_timestamps(video_filename):
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     timestamps = result.stdout.decode("utf-8").split("\n")  
-    import pdb; pdb.set_trace()
     log(f"video_filename: {video_filename}")
     log(f"timestamps: {timestamps}")
     return [(timestamps[0], timestamps[1])]

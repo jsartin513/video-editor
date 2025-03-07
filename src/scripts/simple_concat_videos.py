@@ -40,7 +40,7 @@ def run(output_path, games):
         end_trim_time = game.get("end_trim_time", 0)
         formatted_home_team = format_team_name_for_filename(game["home_team"])
         formatted_away_team = format_team_name_for_filename(game["away_team"])
-        output_file = f"{final_output_path}/Round Robin {game["round"]}: Court 3: {game["home_team"]} vs {game["away_team"]}.mp4"
+        output_file = f"{final_output_path}/Round Robin {game["round"]}: Court 2: {game["home_team"]} vs {game["away_team"]}.mp4"
         first_video = video_paths[0]
         first_video_length = get_video_length(first_video)
         other_videos = video_paths[1:]

@@ -9,6 +9,10 @@ from utils.utils import log, format_team_name_for_filename
 
 MISSED_GAME_INDICES = []
 
+# We didn't always reset the camera between rounds. 
+# So any of these filenames span at least the end of one game and start of the next
+FILENAMES_WITH_MULTIPLE_GAMES = ['GX010343.MP4', 'GX020343.MP4', 'GX010344.MP4', 'GX010348.MP4', 'GX010344.MP4', 'GX010349.MP4', 'GX020348.MP4']
+
 # Rename the videos in the directory to the following format: "Home Team vs. Away Team.mp4"
 # directory_name: the name of the directory containing the videos
 def rename_videos(directory_name, games_list, dry_run=False):
@@ -61,20 +65,34 @@ def get_likely_ordered_game_filenames(directory_name):
         # When the 4-digit number increments, it's a new game.
         video_prefix = video[2:4]
         video_suffix = video[4:8]
+        duplicated_so_move_on = False
 
         if filenames_in_this_recording:
-            if video_suffix == filenames_in_this_recording[-1][4:8] and len(filenames_in_this_recording) < 3: # Still creating the list for this recording
+            if video_suffix == filenames_in_this_recording[-1][4:8] and not duplicated_so_move_on: # Still creating the list for this recording
                 filenames_in_this_recording.append(video)
                 log(f"Appending {video} to filenames_in_this_recording")
+                if video in FILENAMES_WITH_MULTIPLE_GAMES:
+                    duplicated_so_move_on = True
+                    game_video_filenames.append(filenames_in_this_recording)
+                    log(f"Adding {filenames_in_this_recording} to game_video_filenames, split across rounds")
+                    log(f"Game video filenames: {game_video_filenames}")
+                    filenames_in_this_recording = [video]
             else: # This is a new recording, so we need to update the game_video_filenames with a tuple of each filename in this recording
                 game_video_filenames.append(filenames_in_this_recording)
                 filenames_in_this_recording = [video]
                 log(f"New recording: {video}")
                 log(f"Adding {filenames_in_this_recording} to game_video_filenames")
                 log(f"Game video filenames: {game_video_filenames}")
+                if video in FILENAMES_WITH_MULTIPLE_GAMES:
+                    duplicated_so_move_on = True
+                    game_video_filenames.append(filenames_in_this_recording)
+                    log(f"Adding {filenames_in_this_recording} to game_video_filenames, split across rounds")
+                    log(f"Game video filenames: {game_video_filenames}")
+                    filenames_in_this_recording = [video]
         else:
             filenames_in_this_recording.append(video)
             log(f"First video: {video}")
+            
     # Add the last recording
     game_video_filenames.append(filenames_in_this_recording)
 
@@ -108,17 +126,21 @@ def create_metadata_file(schedule, output_path, video_paths):
         if idx in MISSED_GAME_INDICES:
             idx_offset = idx_offset - 1
             continue
-        metadata.append({
-            "home_team": game["home_team"],
-            "away_team": game["away_team"],
-            "video_path": video_paths[idx + idx_offset],
-            "home_team_score": game.get("home_team_score", None),
-            "away_team_score": game.get("away_team_score", None),
-            "round": game["round"],
-            "start_time": game["start_time"],
-            "home_team_logo_path": game.get("home_team_logo_path", None),
-            "away_team_logo_path": game.get("away_team_logo_path", None)
-        })
+        try:
+            metadata.append({
+                "home_team": game["home_team"],
+                "away_team": game["away_team"],
+                "video_path": video_paths[idx + idx_offset],
+                "home_team_score": game.get("home_team_score", None),
+                "away_team_score": game.get("away_team_score", None),
+                "round": game["round"],
+                "start_time": game["start_time"],
+                "home_team_logo_path": game.get("home_team_logo_path", None),
+                "away_team_logo_path": game.get("away_team_logo_path", None)
+            })
+        except IndexError:
+            log(f"Game {idx} was missed")
+            break
     with open(f"{output_path}/metadata.json", "w") as f:
         json.dump(metadata, f)
     log(f"Metadata file created at {output_path}/metadata.json")
