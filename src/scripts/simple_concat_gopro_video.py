@@ -3,7 +3,7 @@ import json
 import math
 import os
 import random
-from utils.files import trim_mp4_file, concatenate_mp4_files, get_video_length
+from utils.files import list_files_of_type_sorted_by_date, trim_mp4_file, concatenate_mp4_files, get_video_length
 from utils.utils import log, format_team_name_for_filename
 
 
@@ -73,19 +73,20 @@ def run(output_path, games):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Handle tournament videos.')
     parser.add_argument('directory_name', type=str, help='The name of the directory containing the videos')
+    parser.add_argument('start_filename', type=str, help='The name of the file to start with')
+    parser.add_argument('end_filename', type=str, help='The name of the file to end with')
+    parser.add_argument('output_filename', type=str, help='The name of the file to output')
     args = parser.parse_args()
 
-    output_path = f"{args.directory_name}/processed_videos"
-    metadata_path = f"{output_path}/metadata.json"
+    log(f"Copying files from {args.start_filename} to {args.end_filename} to {args.output_filename}")
 
-    with open(metadata_path, "r") as f:
-        games = json.load(f)
+    ordered_filenames = list_files_of_type_sorted_by_date(args.directory_name, "mp4")
+    start_index = ordered_filenames.index(args.start_filename)
+    end_index = ordered_filenames.index(args.end_filename)
+    files_to_copy = [f"{args.directory_name}/{filename}" for filename in ordered_filenames[start_index:end_index + 1]]
+    full_output_path = os.path.join(args.directory_name, args.output_filename)
+    if not full_output_path.lower().endswith('.mp4'):
+        full_output_path = full_output_path + ".mp4"
 
-
-    # Pick one random game of the 10 for testing
-    # random_game_number = math.floor(random.random() * 10)
-    # # random_game_number = 6
-    # del games[random_game_number] # For second run, bc we already ran it once
-    # games = [games[random_game_number]]
-    created_videos = run(output_path, games)
-    log(f"Created videos: {created_videos}")
+    concatenate_mp4_files(files_to_copy, full_output_path)
+    log(f"Files copied to {full_output_path}")

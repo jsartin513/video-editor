@@ -442,8 +442,8 @@ if __name__ == '__main__':
 
 
     # Pick one random game of the 10 for testing
-    random_game_number = math.floor(random.random() * 10)
+    # random_game_number = math.floor(random.random() * 10)
     # random_game_number = 6
     # del games[random_game_number] # For second run, bc we already ran it once
-    games = [games[random_game_number]]
+    # games = [games[random_game_number]]
     run(output_path, games)
