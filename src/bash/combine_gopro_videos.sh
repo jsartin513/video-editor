@@ -2,12 +2,26 @@
 
 # Check if a directory is provided
 if [ -z "$1" ]; then
-  echo "Usage: $0 <directory>"
+  echo "Usage: $0 <input_directory> [output_directory]"
+  echo "  <input_directory>: Directory containing GoPro video files."
+  echo "  [output_directory]: (Optional) Directory to save merged videos. Defaults to '<input_directory>/merged_videos'."
   exit 1
 fi
 
 input_dir="$1"
-output_dir="$input_dir/merged_videos"
+output_dir="${2:-$input_dir/merged_videos}"
+
+# Check if output_dir contains spaces
+if [[ "$input_dir" =~ \  ]]; then
+  echo "Error: Input directory '$input_dir' contains spaces. Please use underscores instead."
+  exit 1
+fi
+
+# Check if output_dir contains spaces
+if [[ "$output_dir" =~ \  ]]; then
+  echo "Error: Output directory '$output_dir' contains spaces. Please use underscores instead."
+  exit 1
+fi
 
 # Create the output directory if it doesn't exist
 mkdir -p "$output_dir"
