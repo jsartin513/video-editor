@@ -172,13 +172,13 @@ add_video_metadata() {
     for video_file in "$split_dir"/*.mp4; do
         [[ -f "$video_file" ]] || continue
         
-        local basename=$(basename "$video_file" .mp4)
+        local file_base=$(basename "$video_file" .mp4)
         local temp_file="${video_file%.mp4}_temp.mp4"
         
         # Extract team names from filename
-        local teams=$(echo "$basename" | sed 's/_vs_/ vs /')
+        local teams=$(echo "$file_base" | sed 's/_vs_/ vs /')
         
-        log_info "Adding metadata to: $basename"
+        log_info "Adding metadata to: $file_base"
         
         ffmpeg -hide_banner -loglevel error -i "$video_file" \
             -metadata title="$teams - $tournament_name $round_name" \
