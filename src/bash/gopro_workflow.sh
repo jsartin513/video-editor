@@ -122,10 +122,13 @@ create_games_jsonl() {
         read -p "Duration in minutes [60]: " minutes
         minutes=${minutes:-60}
         
-        # Create JSON entry
-        echo "{\"home_team\":\"$home_team\",\"away_team\":\"$away_team\",\"start_time\":\"$start_time\",\"minutes\":$minutes}" >> "$temp_file"
+        read -p "Game type [round_robin]: " game_type
+        game_type=${game_type:-round_robin}
         
-        log_success "Added game: $home_team vs $away_team"
+        # Create JSON entry
+        echo "{\"home_team\":\"$home_team\",\"away_team\":\"$away_team\",\"start_time\":\"$start_time\",\"minutes\":$minutes,\"type\":\"$game_type\"}" >> "$temp_file"
+        
+        log_success "Added game: $home_team vs $away_team ($game_type)"
     done
     
     if [[ -s "$temp_file" ]]; then
@@ -212,23 +215,33 @@ rename_video_files() {
         local base_name="${original_name%.*}"
         local extension="${original_name##*.}"
         
-        # Try to extract round from JSONL file based on team names
+        # Try to extract round and type from JSONL file based on team names
         local round_from_jsonl=""
+        local type_from_jsonl=""
         if [[ -f "$jsonl_file" ]]; then
             # Extract team names from filename (assuming format: Team1_vs_Team2.mp4)
             local team1=$(echo "$base_name" | sed 's/_vs_.*//')
             local team2=$(echo "$base_name" | sed 's/.*_vs_//')
             
-            # Look for round information in JSONL
-            round_from_jsonl=$(jq -r --arg team1 "$team1" --arg team2 "$team2" \
-                'select(.home_team == $team1 and .away_team == $team2) | .round // empty' \
+            # Convert underscores to spaces for JSONL lookup
+            local team1_spaces=$(echo "$team1" | sed 's/_/ /g')
+            local team2_spaces=$(echo "$team2" | sed 's/_/ /g')
+            
+            # Look for round and type information in JSONL
+            local game_info=$(jq -r --arg team1 "$team1_spaces" --arg team2 "$team2_spaces" \
+                'select(.home_team == $team1 and .away_team == $team2) | "\(.round // "")|\(.type // "")"' \
                 "$jsonl_file" 2>/dev/null || echo "")
             
             # If not found, try the reverse (away vs home)
-            if [[ -z "$round_from_jsonl" ]]; then
-                round_from_jsonl=$(jq -r --arg team1 "$team2" --arg team2 "$team1" \
-                    'select(.home_team == $team1 and .away_team == $team2) | .round // empty' \
+            if [[ -z "$game_info" ]]; then
+                game_info=$(jq -r --arg team1 "$team2_spaces" --arg team2 "$team1_spaces" \
+                    'select(.home_team == $team1 and .away_team == $team2) | "\(.round // "")|\(.type // "")"' \
                     "$jsonl_file" 2>/dev/null || echo "")
+            fi
+            
+            if [[ -n "$game_info" ]]; then
+                round_from_jsonl=$(echo "$game_info" | cut -d'|' -f1)
+                type_from_jsonl=$(echo "$game_info" | cut -d'|' -f2)
             fi
         fi
         
@@ -243,24 +256,35 @@ rename_video_files() {
         
         local new_name=""
         
-        # Build new name: Tournament_Round_Court_OriginalName.ext
-        if [[ -n "$tournament_name" ]]; then
-            new_name="${tournament_name}"
+        # Build new name: "Round Robin 1: Court 1: Team1 vs Team2.ext"
+        # Convert type to proper format (e.g., "round_robin" -> "Round Robin")
+        local formatted_type=""
+        if [[ -n "$type_from_jsonl" ]]; then
+            formatted_type=$(echo "$type_from_jsonl" | sed 's/_/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
         fi
         
-        if [[ -n "$round_name" ]]; then
-            [[ -n "$new_name" ]] && new_name="${new_name}_"
-            new_name="${new_name}${round_name}"
+        # Extract team names from original filename and format them properly
+        local team1=$(echo "$base_name" | sed 's/_vs_.*//' | sed 's/_/ /g')
+        local team2=$(echo "$base_name" | sed 's/.*_vs_//' | sed 's/_/ /g')
+        local teams="${team1} vs ${team2}"
+        
+        # Build the new name in the format: "Round Robin 1: Court 1: Team1 vs Team2"
+        if [[ -n "$formatted_type" && -n "$round_name" ]]; then
+            new_name="${formatted_type} ${round_name}"
+        elif [[ -n "$round_name" ]]; then
+            new_name="Round ${round_name}"
         fi
         
         if [[ -n "$court_name" ]]; then
-            [[ -n "$new_name" ]] && new_name="${new_name}_"
-            new_name="${new_name}${court_name}"
+            # Format court name (replace underscores with spaces)
+            local formatted_court=$(echo "$court_name" | sed 's/_/ /g')
+            [[ -n "$new_name" ]] && new_name="${new_name}: "
+            new_name="${new_name}${formatted_court}"
         fi
         
-        # Add original name
-        [[ -n "$new_name" ]] && new_name="${new_name}_"
-        new_name="${new_name}${base_name}.${extension}"
+        # Add team names
+        [[ -n "$new_name" ]] && new_name="${new_name}: "
+        new_name="${new_name}${teams}.${extension}"
         
         # Skip if no change needed
         if [[ "$original_name" == "$new_name" ]]; then
@@ -284,6 +308,45 @@ rename_video_files() {
         log_success "Renamed $count video files"
     else
         log_info "No files needed renaming"
+    fi
+}
+
+# Check if merged videos already exist
+check_merged_videos_exist() {
+    local video_dir="$1"
+    local merged_dir="$video_dir/merged_videos"
+    
+    # If merged_videos directory doesn't exist, we need to merge
+    if [[ ! -d "$merged_dir" ]]; then
+        return 1
+    fi
+    
+    # Get list of video IDs from source files
+    local video_ids=()
+    for video_file in "$video_dir"/GX*.MP4; do
+        [[ -f "$video_file" ]] || continue
+        local filename=$(basename "$video_file")
+        # Extract 4-digit ID from GX01XXXX.MP4 - take characters 5-8 (0-indexed)
+        local video_id="${filename:4:4}"
+        if [[ ! " ${video_ids[@]} " =~ " ${video_id} " ]]; then
+            video_ids+=("$video_id")
+        fi
+    done
+    
+    # Check if all expected merged videos exist
+    local all_exist=true
+    for video_id in "${video_ids[@]}"; do
+        local merged_file="$merged_dir/PROCESSED${video_id}.MP4"
+        if [[ ! -f "$merged_file" ]]; then
+            all_exist=false
+            break
+        fi
+    done
+    
+    if [[ "$all_exist" == "true" ]]; then
+        return 0  # All merged videos exist
+    else
+        return 1  # Some merged videos are missing
     fi
 }
 
@@ -313,17 +376,35 @@ run_workflow() {
     fi
     
     # Step 3: Combine GoPro videos
-    log_info "Combining GoPro videos..."
-    "$SCRIPT_DIR/combine_gopro_videos.sh" "$video_dir"
-    
-    if [[ $? -ne 0 ]]; then
-        log_error "Failed to combine GoPro videos"
-        exit 1
+    if check_merged_videos_exist "$video_dir"; then
+        log_info "Merged videos already exist, skipping video combination step"
+    else
+        log_info "Combining GoPro videos..."
+        "$SCRIPT_DIR/combine_gopro_videos.sh" "$video_dir"
+        
+        if [[ $? -ne 0 ]]; then
+            log_error "Failed to combine GoPro videos"
+            exit 1
+        fi
+        
+        log_success "GoPro videos combined successfully"
     fi
     
-    log_success "GoPro videos combined successfully"
+    # Step 4: Get tournament/court information for proper filename generation
+    local tournament_name="$DEFAULT_TOURNAMENT_NAME"
+    local court_name="$DEFAULT_COURT_NAME"
     
-    # Step 4: Split videos based on games
+    if [[ "$AUTO_RENAME_FILES" == "true" ]]; then
+        log_info "Using default tournament and court names for file generation"
+    else
+        read -p "Tournament name [$DEFAULT_TOURNAMENT_NAME]: " user_tournament_name
+        tournament_name=${user_tournament_name:-$DEFAULT_TOURNAMENT_NAME}
+        
+        read -p "Court name [$DEFAULT_COURT_NAME]: " user_court_name
+        court_name=${user_court_name:-$DEFAULT_COURT_NAME}
+    fi
+    
+    # Step 5: Split videos based on games
     local merged_dir="$video_dir/merged_videos"
     local split_dir="$video_dir/split_videos"
     
@@ -334,7 +415,7 @@ run_workflow() {
         [[ -f "$merged_video" ]] || continue
         
         log_info "Processing: $(basename "$merged_video")"
-        "$SCRIPT_DIR/split_game_videos.sh" "$merged_video" "$jsonl_file"
+        "$SCRIPT_DIR/split_game_videos.sh" "$merged_video" "$jsonl_file" --tournament "$tournament_name" --court "$court_name"
         
         if [[ $? -ne 0 ]]; then
             log_error "Failed to split video: $merged_video"
@@ -344,45 +425,24 @@ run_workflow() {
     
     log_success "Videos split successfully"
     
-    # Step 5: Add metadata and rename files
-    local should_add_info="$AUTO_RENAME_FILES"
-    if [[ "$should_add_info" != "true" ]]; then
-        read -p "Add tournament/round/court information to videos? (y/n) [y]: " add_info
-        add_info=${add_info:-y}
-        should_add_info="$add_info"
+    # Step 6: Add metadata (files already have proper names)
+    local should_add_metadata="$AUTO_ADD_METADATA"
+    if [[ "$should_add_metadata" != "true" ]]; then
+        read -p "Add metadata to videos? (y/n) [y]: " add_metadata
+        add_metadata=${add_metadata:-y}
+        should_add_metadata="$add_metadata"
     fi
     
-    if [[ "$should_add_info" =~ ^[Yy]|^true$ ]]; then
-        read -p "Tournament name [$DEFAULT_TOURNAMENT_NAME]: " tournament_name
-        tournament_name=${tournament_name:-$DEFAULT_TOURNAMENT_NAME}
-        
-        read -p "Court name [$DEFAULT_COURT_NAME]: " court_name
-        court_name=${court_name:-$DEFAULT_COURT_NAME}
-        
-        # Ask for starting round number only if rounds aren't in JSONL
-        local has_rounds_in_jsonl=false
-        if [[ -f "$jsonl_file" ]] && jq -e '.[0].round' "$jsonl_file" >/dev/null 2>&1; then
-            has_rounds_in_jsonl=true
-            log_info "Using round information from games JSONL file"
-        else
-            read -p "Starting round number [1]: " start_round
-            start_round=${start_round:-1}
-            log_info "Using incremental round numbering starting from $start_round"
-        fi
-        
-        # Rename files first (before adding metadata to avoid file not found issues)
-        rename_video_files "$split_dir" "$tournament_name" "$court_name" "$jsonl_file" "${start_round:-1}"
-        
-        # Add metadata to renamed files (we'll extract round info from the new filenames)
+    if [[ "$should_add_metadata" =~ ^[Yy]|^true$ ]]; then
         add_video_metadata "$split_dir" "$tournament_name" "$court_name" "Round"
     fi
     
-    # Step 6: Cleanup (optional)
+    # Step 7: Cleanup (optional)
     if [[ "$CLEANUP_INTERMEDIATE_FILES" == "true" ]]; then
         log_info "Cleaning up intermediate files..."
         # Add cleanup logic here if needed
     fi
-    
+
     log_success "Workflow completed successfully!"
     log_info "Final videos are in: $split_dir"
 }
