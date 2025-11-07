@@ -96,10 +96,11 @@ time_to_seconds() {
   echo $((10#$h * 3600 + 10#$m * 60 + 10#$s))
 }
 
-# Check if we're using timestamp mode (start_time begins with 00:)
+# Check if we're using timestamp mode (start_time is in HH:MM:SS format)
 use_timestamp_mode() {
   local first_game_start=$(head -n1 "$games_jsonl" | jq -r '.start_time' 2>/dev/null || echo "")
-  [[ "$first_game_start" =~ ^00: ]]
+  # Check if format is HH:MM:SS (with optional leading zero)
+  [[ "$first_game_start" =~ ^[0-9]{1,2}:[0-9]{2}:[0-9]{2}$ ]]
 }
 
 # For timestamp mode, we don't need video start time - just use video start as 0
