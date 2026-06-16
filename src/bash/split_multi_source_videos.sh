@@ -191,15 +191,36 @@ while IFS= read -r line; do
   home_team_formatted=$(echo "$home_team" | sed 's/ /_/g')
   away_team_formatted=$(echo "$away_team" | sed 's/ /_/g')
   
-  # Create output filename
+  # Create output filename (match split_game_videos.sh naming)
   output_filename=""
-  if [ -n "$tournament_name" ] && [ -n "$court_name" ]; then
-    if [ -n "$round" ]; then
-      # Format: "Round Robin X: Court Y: Team1 vs Team2"
-      output_filename="Round Robin $round: $court_name: $home_team vs $away_team.mp4"
+  filename_parts=""
+  if [ -n "$game_type" ] && [ -n "$round" ]; then
+    formatted_type=$(echo "$game_type" | sed 's/_/ /g' | awk '{for(i=1;i<=NF;i++) $i=toupper(substr($i,1,1)) tolower(substr($i,2))}1')
+    filename_parts="${formatted_type} ${round}"
+  elif [ -n "$round" ]; then
+    filename_parts="Round ${round}"
+  fi
+
+  if [ -n "$court_name" ]; then
+    formatted_court=$(echo "$court_name" | sed 's/_/ /g')
+    if [ -n "$filename_parts" ]; then
+      filename_parts="${filename_parts}: ${formatted_court}"
     else
-      output_filename="$tournament_name: $court_name: $home_team vs $away_team.mp4"
+      filename_parts="${formatted_court}"
     fi
+  fi
+
+  team_names="${home_team} vs ${away_team}"
+  if [ -n "$filename_parts" ]; then
+    filename_parts="${filename_parts}: ${team_names}"
+  else
+    filename_parts="${team_names}"
+  fi
+
+  if [ -n "$tournament_name" ] && [ -n "$filename_parts" ]; then
+    output_filename="${filename_parts}.mp4"
+  elif [ -n "$court_name" ] && [ -n "$filename_parts" ]; then
+    output_filename="${filename_parts}.mp4"
   else
     output_filename="${home_team_formatted}_vs_${away_team_formatted}.mp4"
   fi

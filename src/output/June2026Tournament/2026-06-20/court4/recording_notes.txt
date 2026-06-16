@@ -1,0 +1,9 @@
+# Recording notes — Court 4 — Saturday 2026-06-20
+# Log any camera stop/start events (battery swaps, angle adjustments, etc.)
+# Format: HH:MM — event description
+#
+# Example:
+# 09:00 — Round robin recording started
+# 12:05 — Stopped for lunch
+# 13:30 — Bracket play recording started
+# 14:15 — Battery swap (~2 min gap)
