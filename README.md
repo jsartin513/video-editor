@@ -19,6 +19,12 @@ Turn any regular SD card into a "processing hub" that can handle GoPro footage f
 
 See [PORTABLE_README.md](PORTABLE_README.md) for full documentation.
 
+## Tournament processing (June 2026)
+
+For **Throw Down 5th Edition** — per-matchup videos from GoPro footage on courts 2–4 (Saturday) and 2–3 (Sunday):
+
+See **[TOURNAMENT_RUNBOOK.md](TOURNAMENT_RUNBOOK.md)** for setup, SD import, merge/split, timing modes, and the day-of checklist.
+
 ## Traditional Setup
 Create a virtualenv using your preferred method. For example, using `virtualenv` and `virtualenvwrapper`:
 ```bash
