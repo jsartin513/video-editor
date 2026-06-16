@@ -134,7 +134,7 @@ def detect_format(workbook):
     header_row = next(first.iter_rows(values_only=True, max_row=1))
     if not header_row:
         return "throwdown"
-    header = [normalize_header(cell) for cell in header_row[0]]
+    header = [normalize_header(cell) for cell in header_row]
     if "date" in header and "court" in header and "home_team" in header:
         return "table"
     return "throwdown"

@@ -78,7 +78,14 @@ echo ""
 count=0
 while IFS= read -r -d '' video; do
   filename="$(basename "$video")"
-  dest="$deliverables_dir/$filename"
+  rel="${video#$tournament_root/}"
+  day_court="$(echo "$rel" | cut -d/ -f1-2)"
+  if [ -z "$day_court" ] || [ "$day_court" = "$rel" ]; then
+    day_court="unknown"
+  fi
+  dest_dir="$deliverables_dir/$day_court"
+  mkdir -p "$dest_dir"
+  dest="$dest_dir/$filename"
 
   if [ -e "$dest" ] || [ -L "$dest" ]; then
     rm -f "$dest"
@@ -86,10 +93,10 @@ while IFS= read -r -d '' video; do
 
   if [ "$mode" = "copy" ]; then
     cp -p "$video" "$dest"
-    echo "Copied: $filename"
+    echo "Copied: $day_court/$filename"
   else
     ln -sf "$video" "$dest"
-    echo "Linked: $filename"
+    echo "Linked: $day_court/$filename"
   fi
   count=$((count + 1))
 done < <(find "$tournament_root" -path '*/split_videos/*' \( -name '*.mp4' -o -name '*.MP4' \) -print0 2>/dev/null)

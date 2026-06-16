@@ -17,7 +17,7 @@ split_script="$script_dir/split_multi_source_videos.sh"
 day_dir=""
 schedule_dir=""
 courts=""
-tournament_name="June2026Tournament"
+tournament_name=""
 dry_run=false
 
 show_usage() {
@@ -29,7 +29,7 @@ Usage: $0 <day_directory> [options]
 Options:
   --schedule-dir DIR   Directory with {date}_courtN.jsonl files
   --courts LIST        Comma-separated court numbers (default: auto-detect)
-  --tournament NAME    Tournament name for split output (default: June2026Tournament)
+  --tournament NAME    Tournament name for split output (default: parent folder name)
   --dry-run            Preview split only; skip merge and ffmpeg writes
   -h, --help           Show this help
 
@@ -96,6 +96,10 @@ fi
 
 day_dir="$(cd "$day_dir" && pwd)"
 day_name="$(basename "$day_dir")"
+
+if [ -z "$tournament_name" ]; then
+  tournament_name="$(basename "$(dirname "$day_dir")")"
+fi
 
 if [ -z "$schedule_dir" ]; then
   parent_dir="$(dirname "$day_dir")"
@@ -196,7 +200,7 @@ for court_num in "${court_list[@]}"; do
     continue
   fi
 
-  split_count=$(find "$court_dir/split_videos" -name '*.mp4' -o -name '*.MP4' 2>/dev/null | wc -l | tr -d ' ')
+  split_count=$(find "$court_dir/split_videos" \( -name '*.mp4' -o -name '*.MP4' \) 2>/dev/null | wc -l | tr -d ' ')
   echo "Done: $court_label ($split_count matchup files in split_videos/)"
   echo ""
 done

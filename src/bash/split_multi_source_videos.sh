@@ -77,6 +77,55 @@ time_to_seconds() {
   echo $((10#$h * 3600 + 10#$m * 60 + 10#$s))
 }
 
+# HH:MM:SS = offset from merged video start; HH:MM = wall-clock time (match split_game_videos.sh)
+is_offset_mode() {
+  local first_game_start
+  first_game_start=$(head -n1 "$games_jsonl" | jq -r '.start_time' 2>/dev/null || echo "")
+  [[ "$first_game_start" =~ ^[0-9]{1,2}:[0-9]{2}:[0-9]{2}$ ]]
+}
+
+extract_video_clock_start() {
+  local video_file="$1"
+  local video_start_time
+  local timecode
+
+  timecode=$(ffprobe -v error -select_streams v:0 -show_entries stream_tags=timecode -of default=noprint_wrappers=1:nokey=1 "$video_file" | head -n 1)
+  if [ -n "$timecode" ]; then
+    timecode="${timecode%;*}"
+    if [[ "$timecode" =~ ^[0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+      video_start_time="2000-01-01 $timecode"
+    fi
+  fi
+
+  if [ -z "$video_start_time" ]; then
+    video_start_time=$(ffprobe -v error -show_entries format_tags=creation_time -of default=noprint_wrappers=1:nokey=1 "$video_file" | head -n 1 | sed 's/T/ /;s/\..*//')
+  fi
+
+  if [ -z "$video_start_time" ]; then
+    echo "Error: Could not extract video start time from $(basename "$video_file")." >&2
+    return 1
+  fi
+
+  echo "$video_start_time" | awk '{print $2}' | cut -c1-5
+}
+
+parse_recording_notes_start() {
+  local notes_file="$video_directory/recording_notes.txt"
+  local line
+
+  [ -f "$notes_file" ] || return 1
+
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line//[[:space:]]/}" ]] && continue
+    if [[ "$line" =~ ^([0-9]{1,2}:[0-9]{2})[[:space:]]— ]]; then
+      echo "${BASH_REMATCH[1]}"
+      return 0
+    fi
+  done < "$notes_file"
+  return 1
+}
+
 # Get video durations and create cumulative timeline
 video_durations=()
 cumulative_times=(0)
@@ -124,12 +173,25 @@ find_video_for_timestamp() {
 output_dir="$video_directory/split_videos"
 mkdir -p "$output_dir"
 
-# Check if we're using timestamp mode
-first_start_time=$(head -n 1 "$games_jsonl" | jq -r '.start_time')
-use_timestamp_mode=false
-if [[ "$first_start_time" =~ ^[0-9]{2}:[0-9]{2}(:[0-9]{2})?$ ]]; then
-  use_timestamp_mode=true
-  echo "Using timestamp mode - games are timed from video start"
+video_start_seconds=0
+offset_mode=false
+if is_offset_mode; then
+  offset_mode=true
+  echo "Using offset mode - start_time is elapsed time from merged video start (HH:MM:SS)"
+else
+  recording_start_hms=$(parse_recording_notes_start || true)
+  if [ -n "$recording_start_hms" ]; then
+    video_start_seconds=$(time_to_seconds "$recording_start_hms")
+    echo "Using clock-based timing - recording started at $recording_start_hms (from recording_notes.txt)"
+  else
+    video_start_hms=$(extract_video_clock_start "${video_files[0]}")
+    if [ $? -ne 0 ] || [ -z "$video_start_hms" ]; then
+      echo "Error: Clock-based schedule requires video metadata or recording_notes.txt"
+      exit 1
+    fi
+    video_start_seconds=$(time_to_seconds "$video_start_hms")
+    echo "Using clock-based timing - merged video starts at $video_start_hms (from clip metadata)"
+  fi
 fi
 
 # Process each game
@@ -151,19 +213,33 @@ while IFS= read -r line; do
     continue
   fi
   
-  # Convert start time to seconds
-  start_seconds=$(time_to_seconds "$start_time")
-  if [ $? -ne 0 ]; then
-    echo "Error: Could not parse start time: $start_time"
-    continue
+  # Convert schedule time to offset on merged timeline
+  if [ "$offset_mode" = true ]; then
+    start_seconds=$(time_to_seconds "$start_time")
+    if [ $? -ne 0 ]; then
+      echo "Error: Could not parse start time: $start_time"
+      continue
+    fi
+  else
+    game_start_seconds=$(time_to_seconds "$start_time")
+    if [ $? -ne 0 ]; then
+      echo "Error: Could not parse start time: $start_time"
+      continue
+    fi
+    start_seconds=$((game_start_seconds - video_start_seconds))
+    if [ $start_seconds -lt 0 ]; then
+      echo "Skipping ${home_team} vs ${away_team}: game start ($start_time) is before recording start."
+      continue
+    fi
   fi
   
   # Calculate duration in seconds
   duration_seconds=$((minutes * 60))
+  end_seconds=$((start_seconds + duration_seconds))
   
   # Determine source video
   if [ -n "$video_file" ]; then
-    # Use specified video file
+    # Use specified video file (start_time is offset within that file)
     source_video="$video_directory/merged_videos/$video_file"
     if [ ! -f "$source_video" ]; then
       echo "Error: Specified video file not found: $source_video"
@@ -171,15 +247,12 @@ while IFS= read -r line; do
     fi
     offset_in_video=$start_seconds
   else
-    # Fall back to old multi-video timeline logic
     video_info=$(find_video_for_timestamp $start_seconds)
     source_video=$(echo "$video_info" | cut -d'|' -f1)
     offset_in_video=$(echo "$video_info" | cut -d'|' -f2)
   fi
   
-  # Check if the game spans multiple videos (only relevant for old timeline logic)
   if [ -z "$video_file" ]; then
-    end_seconds=$((start_seconds + duration_seconds))
     end_video_info=$(find_video_for_timestamp $end_seconds)
     end_source_video=$(echo "$end_video_info" | cut -d'|' -f1)
   else

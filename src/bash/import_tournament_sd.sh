@@ -115,9 +115,15 @@ if [ -z "$source_volume" ]; then
     for i in "${!volumes[@]}"; do
       echo "  $((i + 1))) ${volumes[$i]}"
     done
-    echo -n "Select card number: "
-    read selection
-    source_volume="${volumes[$((selection - 1))]}"
+    while true; do
+      echo -n "Select card number (1-${#volumes[@]}): "
+      read -r selection
+      if [[ "$selection" =~ ^[0-9]+$ ]] && [ "$selection" -ge 1 ] && [ "$selection" -le ${#volumes[@]} ]; then
+        source_volume="${volumes[$((selection - 1))]}"
+        break
+      fi
+      echo "Invalid selection. Enter a number between 1 and ${#volumes[@]}."
+    done
   fi
 fi
 
@@ -137,6 +143,7 @@ echo ""
 
 copied=0
 skipped=0
+would_copy=0
 
 for pattern in "${GOPRO_PATTERNS[@]}"; do
   while IFS= read -r -d '' file; do
@@ -149,13 +156,18 @@ for pattern in "${GOPRO_PATTERNS[@]}"; do
     fi
     if [ "$dry_run" = true ]; then
       echo "Would copy: $filename"
+      would_copy=$((would_copy + 1))
     else
       cp -p "$file" "$dest_file"
       echo "Copied: $filename"
+      copied=$((copied + 1))
     fi
-    copied=$((copied + 1))
   done < <(find "$gopro_dir" -maxdepth 1 -name "$pattern" -print0 2>/dev/null)
 done
 
 echo ""
-echo "Import complete: $copied new file(s), $skipped already present."
+if [ "$dry_run" = true ]; then
+  echo "Dry run complete: $would_copy file(s) would be copied, $skipped already present."
+else
+  echo "Import complete: $copied new file(s), $skipped already present."
+fi
