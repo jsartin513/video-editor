@@ -50,6 +50,60 @@ This parses Throw Down **team sheets** (`PLAYING : Court N (HOME) vs. ...`) and 
 
 **Current schedule coverage:** Saturday round robin only (30 games, courts 2–4). Re-run the converter when bracket and Sunday matchups are added to the spreadsheet.
 
+## Overhead audio verification
+
+The venue-wide overhead `.wav` (PA announcements for matchups, no blocking, time calls, etc.) can be checked against the generated JSONL schedule before or after GoPro splitting.
+
+The schedule JSONL only defines **`start_time`** and **`minutes`** per game (25-minute slots, back-to-back). Verification expects announcements at each **game start** and **game end** derived from those fields — not countdown warnings unless you opt in with `--warning-minutes`.
+
+One-time extra deps:
+
+```bash
+pip install -r requirements-transcribe.txt
+```
+
+**Step 1 — preview expected announcement times** (no transcription):
+
+```bash
+./src/bash/verify_overhead_schedule.sh \
+  --wav /path/to/overhead_2026-06-20.wav \
+  --schedule-dir src/output/June2026Tournament/schedule/generated \
+  --date 2026-06-20 \
+  --courts 2,3,4 \
+  --wav-start-time 09:00 \
+  --timeline-only
+```
+
+Scrub the `.wav` at offset `0:00` — you should hear the first round's start announcements. Adjust `--wav-start-time` if the anchor is wrong.
+
+**Step 2 — full verification** (transcribes with faster-whisper; caches transcript beside the `.wav`):
+
+```bash
+./src/bash/verify_overhead_schedule.sh \
+  --wav /path/to/overhead_2026-06-20.wav \
+  --schedule-dir src/output/June2026Tournament/schedule/generated \
+  --date 2026-06-20 \
+  --courts 2,3,4 \
+  --wav-start-time 09:00 \
+  --tolerance 90
+```
+
+The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
+
+**Lunch break:** skip the gap when PA was silent:
+
+```bash
+  --skip-ranges 12:05-13:30
+```
+
+**Afternoon bracket only:**
+
+```bash
+  --skip-before 13:30 --wav-start-time 13:30
+```
+
+**Manual spot-check:** After running the script, listen to one early, one mid-morning, and one post-lunch game per court. Confirm team names at game start and the end-of-game call land within ~1 minute of JSONL times.
+
 ## Field day
 
 ### Hardware
@@ -158,6 +212,7 @@ Options:
 | `process_tournament_day.sh` | Merge + split all courts for one day |
 | `collect_deliverables.sh` | Symlink/copy all matchups to `deliverables/` |
 | `validate_tournament_setup.sh` | Test pipeline on sample Week2 footage |
+| `verify_overhead_schedule.sh` | Verify overhead .wav vs schedule JSONL |
 | `excel_schedule_to_jsonl.py` | Excel → per-court `games.jsonl` |
 
 Lower-level scripts (called automatically): `combine_gopro_videos.sh`, `split_multi_source_videos.sh`.
