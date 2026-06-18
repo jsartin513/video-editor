@@ -127,6 +127,25 @@ Each speech item in the JSON report includes:
 
 The report root includes `audio_structure` with notes on no-blocking, the two-countdown-per-round pattern, and verification scope. Each round includes a `structure` summary with role counts.
 
+**Inject no-blocking announcements** (when clips exist in GarageBand but not in the export):
+
+```bash
+# Preview insertion points (from by-round report)
+./src/bash/inject_no_blocking.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
+  --dry-run
+
+# Write {wav_stem}_with_no_blocking.wav (default clip: Dance Vocal#31)
+./src/bash/inject_no_blocking.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
+  --verify
+```
+
+Clip presets: `--clip-preset three_minutes_no_blocking` (default), `no_blocking`, `three_minutes_remaining`.  
+Requires the GarageBand project under `--band-dir` (default: `~/Downloads/15 min round - foam NS 8.5 (no time limit on NB).band`).
+
 The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
 
 **Lunch break:** skip the gap when PA was silent:
@@ -252,6 +271,7 @@ Options:
 | `collect_deliverables.sh` | Symlink/copy all matchups to `deliverables/` |
 | `validate_tournament_setup.sh` | Test pipeline on sample Week2 footage |
 | `verify_overhead_schedule.sh` | Verify overhead .wav vs schedule JSONL |
+| `inject_no_blocking.sh` | Insert no-blocking PA clips into overhead .wav using by-round report |
 | `excel_schedule_to_jsonl.py` | Excel → per-court `games.jsonl` |
 
 Lower-level scripts (called automatically): `combine_gopro_videos.sh`, `split_multi_source_videos.sh`.
