@@ -1,0 +1,59 @@
+{
+  "wav_start_time": "09:00",
+  "rounds": [
+    {
+      "round": 1,
+      "schedule_label": "Round 1",
+      "speech": [
+        {
+          "wav_seconds": 1000.0,
+          "wav_timestamp": "00:16:40",
+          "offset_seconds": 240,
+          "text": "Players line up, here we go",
+          "role": "play_start"
+        },
+        {
+          "wav_seconds": 1540.0,
+          "wav_timestamp": "00:25:40",
+          "offset_seconds": 780,
+          "text": "Halfway through the round",
+          "role": "halfway"
+        },
+        {
+          "wav_seconds": 1996.0,
+          "wav_timestamp": "00:33:16",
+          "offset_seconds": 1496,
+          "text": "Ten, nine, eight, seven, six, five, four, three, two, one",
+          "role": "countdown_play_end"
+        },
+        {
+          "wav_seconds": 2100.0,
+          "wav_timestamp": "00:35:00",
+          "offset_seconds": 1600,
+          "text": "Ten, nine, eight, seven, six, five, four, three, two, one",
+          "role": "countdown_round_boundary"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "schedule_label": "Round 2",
+      "speech": [
+        {
+          "wav_seconds": 2500.0,
+          "wav_timestamp": "00:41:40",
+          "offset_seconds": 240,
+          "text": "Players line up",
+          "role": "play_start"
+        },
+        {
+          "wav_seconds": 3496.0,
+          "wav_timestamp": "00:58:16",
+          "offset_seconds": 1496,
+          "text": "Three, two, one",
+          "role": "countdown_play_end"
+        }
+      ]
+    }
+  ]
+}
