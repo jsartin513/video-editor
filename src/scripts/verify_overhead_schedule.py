@@ -855,20 +855,42 @@ def serialize_match_results(results: list[MatchResult]) -> list[dict]:
 
 
 def write_by_round_phrases_file(reports: list[dict], output_path: Path) -> None:
-    lines: list[str] = []
+    lines: list[str] = [
+        "Overhead PA speech timeline — all rounds",
+        f"{len(reports)} rounds, {sum(len(r['speech']) for r in reports)} phrases total",
+        "",
+    ]
     for report in reports:
+        structure = report.get("structure", {})
+        matchup_parts = [
+            f"C{court} {matchup}" for court, matchup in sorted(report["matchups"].items())
+        ]
+        lines.append("=" * 110)
         lines.append(
-            f"Round {report['round']} ({report['schedule_label']}, wall {report['wall_start']})  "
-            f"anchor {seconds_to_hms(report['slot_anchor_wav'])}"
+            f"Round {report['round']} ({report['schedule_label']})  "
+            f"wall start {report['wall_start']}"
         )
+        lines.append(
+            f"Anchor: {seconds_to_hms(report['slot_anchor_wav'])}  "
+            f"(drift {report['anchor_drift']:+.0f}s, source {report['anchor_source']})"
+        )
+        lines.append(f"Matchups: {' · '.join(matchup_parts)}")
+        lines.append(
+            "Structure: "
+            f"play_end_countdowns={structure.get('countdown_play_end', 0)}  "
+            f"round_boundary_countdowns={structure.get('countdown_round_boundary', 0)}  "
+            f"prior_round_tail={structure.get('prior_round_tail_segments', 0)}  "
+            f"photos_or_extra={structure.get('has_photos_or_extra', False)}  "
+            f"phrases={len(report['speech'])}"
+        )
+        lines.append("-" * 110)
         lines.append(f"{'WAV':<12} {'OFFSET':<8} {'WALL':<8} {'ROLE':<28} {'TEXT'}")
         lines.append("-" * 110)
         for item in report["speech"]:
-            cue_note = f"  [{', '.join(item['cues'])}]" if item.get("cues") else ""
             role = item.get("role", "other")
             lines.append(
                 f"{item['wav_timestamp']:<12} {item['offset']:<8} {item['wall_time']:<8} "
-                f"{role:<28} {item['text']}{cue_note}"
+                f"{role:<28} {item['text']}"
             )
         lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")

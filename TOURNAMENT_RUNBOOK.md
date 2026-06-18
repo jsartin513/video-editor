@@ -152,6 +152,31 @@ uses ffmpeg silencedetect to avoid talking over the countdown). Default clip: Da
 Clip presets: `--clip-preset three_minutes_no_blocking` (default), `no_blocking`, `three_minutes_remaining`.  
 Requires the GarageBand project under `--band-dir` (default: `~/Downloads/15 min round - foam NS 8.5 (no time limit on NB).band`).
 
+**Inject Start buzzer at play start** (after no-blocking; play-start only — not play-end or boundary buzzers):
+
+Overlays the GarageBand **Start buzzer** tone immediately after each round's "Players line up / here we go" phrase (same file duration; uses transcript phrase-end detection). Run on the no-blocking wav so prior overlays stay intact.
+
+```bash
+# Preview insertion points (use by-round report for the no-blocking wav)
+./src/bash/inject_start_buzzer.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking_overhead_by_round_report.json" \
+  --transcript "/path/to/BDL Throwdown 5 Full Timeline.wav.transcript.json" \
+  --dry-run
+
+# Write {wav_stem}_with_no_blocking_and_start_buzzer.wav
+./src/bash/inject_start_buzzer.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking_overhead_by_round_report.json" \
+  --transcript "/path/to/BDL Throwdown 5 Full Timeline.wav.transcript.json" \
+  --verify
+
+# Fail if insert would overlap non-play_start speech
+  --require-phrase-clear
+```
+
+Default clip: `Start buzzer` from the same GarageBand project (`--band-dir`). Writes `{output}.injections.json` with `injection_type: start_buzzer` and a reference to the upstream no-blocking sidecar.
+
 The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
 
 **Lunch break:** skip the gap when PA was silent:
@@ -278,6 +303,7 @@ Options:
 | `validate_tournament_setup.sh` | Test pipeline on sample Week2 footage |
 | `verify_overhead_schedule.sh` | Verify overhead .wav vs schedule JSONL |
 | `inject_no_blocking.sh` | Insert no-blocking PA clips into overhead .wav using by-round report |
+| `inject_start_buzzer.sh` | Insert Start buzzer at play start into overhead .wav (after no-blocking) |
 | `excel_schedule_to_jsonl.py` | Excel → per-court `games.jsonl` |
 
 Lower-level scripts (called automatically): `combine_gopro_videos.sh`, `split_multi_source_videos.sh`.
