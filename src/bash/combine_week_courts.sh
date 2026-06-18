@@ -31,10 +31,18 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --court)
+      if [ -z "$2" ]; then
+        echo "Error: --court requires a court number or name (e.g. 1 or Court1)"
+        exit 1
+      fi
       COURT_FILTER="$2"
       shift 2
       ;;
     --title-prefix)
+      if [ -z "$2" ]; then
+        echo "Error: --title-prefix requires a value"
+        exit 1
+      fi
       TITLE_PREFIX="$2"
       shift 2
       ;;
@@ -53,12 +61,14 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -z "$week_dir" ]; then
-  echo "Usage: $0 <week_directory> [output_directory] [--title-prefix \"...\"] [--dry-run]"
+  echo "Usage: $0 <week_directory> [output_directory] [options]"
   echo ""
   echo "  <week_directory>: Directory containing court1/Court1, court2/Court2, ... subfolders"
   echo "  [output_directory]: Where merged videos are written (default: <week_directory>/merged_videos)"
   echo "  --title-prefix: Upload title prefix, e.g. \"BDL Season 7: Summer Remix\""
   echo "                  Output: \"<title_prefix>: Week 3 Court 1.MP4\""
+  echo "  --court N: Only merge the named court (e.g. 1, Court1)"
+  echo "  --allow-partial: Merge available clips even if some are still transferring"
   echo "  --dry-run: List clips and planned outputs without merging"
   echo ""
   echo "Expected structure:"
@@ -121,19 +131,43 @@ abs_path() {
   echo "$(cd "$dir" && pwd)/$base"
 }
 
-# GOPR, then GP segments, then GX segments (GoPro chapter order)
+file_size_bytes() {
+  local file="$1"
+  local size
+
+  size="$(stat -f%z "$file" 2>/dev/null || stat -c%s "$file" 2>/dev/null || echo 0)"
+  echo "$size"
+}
+
+# Group clips by GoPro session ID (four-digit suffix), then GOPR -> GP -> GX per session.
 list_gopro_files() {
   local court_dir="$1"
-  find "$court_dir" -maxdepth 1 -type f \( -iname 'GOPR*.MP4' -o -iname 'GOPR*.mp4' \) 2>/dev/null | sort
-  find "$court_dir" -maxdepth 1 -type f \( -iname 'GP[0-9]*.MP4' -o -iname 'GP[0-9]*.mp4' \) ! -iname 'GOPR*' 2>/dev/null | sort
-  find "$court_dir" -maxdepth 1 -type f \( -iname 'GX*.MP4' -o -iname 'GX*.mp4' \) 2>/dev/null | sort
+  local gx_ids gp_ids gopr_ids all_ids video_id gopr_files gp_files gx_files files
+
+  gx_ids=$(find "$court_dir" -maxdepth 1 -type f \( -iname 'GX??????.MP4' -o -iname 'GX??????.mp4' \) 2>/dev/null \
+    | sed -E 's/.*GX[0-9]{2}([0-9]{4})\.[^/]+$/\1/I' | sort -u)
+  gp_ids=$(find "$court_dir" -maxdepth 1 -type f \( -iname 'GP??????.MP4' -o -iname 'GP??????.mp4' \) 2>/dev/null \
+    | sed -E 's/.*GP[0-9]{2}([0-9]{4})\.[^/]+$/\1/I' | sort -u)
+  gopr_ids=$(find "$court_dir" -maxdepth 1 -type f \( -iname 'GOPR????.MP4' -o -iname 'GOPR????.mp4' \) 2>/dev/null \
+    | sed -E 's/.*GOPR([0-9]{4})\.[^/]+$/\1/I' | sort -u)
+  all_ids=$(printf '%s\n%s\n%s\n' "$gx_ids" "$gp_ids" "$gopr_ids" | grep -v '^$' | sort -u)
+
+  for video_id in $all_ids; do
+    gopr_files=$(find "$court_dir" -maxdepth 1 -type f \( -iname "GOPR${video_id}.MP4" -o -iname "GOPR${video_id}.mp4" \) 2>/dev/null | sort)
+    gp_files=$(find "$court_dir" -maxdepth 1 -type f \( -iname "GP??${video_id}.MP4" -o -iname "GP??${video_id}.mp4" \) 2>/dev/null | sort)
+    gx_files=$(find "$court_dir" -maxdepth 1 -type f \( -iname "GX??${video_id}.MP4" -o -iname "GX??${video_id}.mp4" \) 2>/dev/null | sort)
+    files=$(printf '%s\n%s\n%s\n' "$gopr_files" "$gp_files" "$gx_files" | grep -v '^$')
+    if [ -n "$files" ]; then
+      printf '%s\n' "$files"
+    fi
+  done
 }
 
 is_valid_video() {
   local file="$1"
   local size
 
-  size="$(stat -f%z "$file" 2>/dev/null || echo 0)"
+  size="$(file_size_bytes "$file")"
   if [ "$size" -lt 1048576 ]; then
     return 1
   fi
@@ -221,6 +255,7 @@ fi
 echo ""
 
 court_count=0
+merged_count=0
 for court_dir in $(find_court_dirs); do
   [ -d "$court_dir" ] || continue
   court_count=$((court_count + 1))
@@ -282,6 +317,7 @@ for court_dir in $(find_court_dirs); do
     echo "Combining $file_count clips -> $output_file"
     ffmpeg -y -f concat -safe 0 -i "$temp_file" -c copy "$output_file"
   fi
+  merged_count=$((merged_count + 1))
   rm -f "$temp_file"
 
   if command -v ffprobe >/dev/null 2>&1; then
@@ -306,6 +342,11 @@ fi
 if [ "$DRY_RUN" = true ]; then
   echo "=== Dry-run complete ==="
   exit 0
+fi
+
+if [ "$merged_count" -eq 0 ]; then
+  echo "Error: No merged videos were written (all courts skipped or had no complete clips)"
+  exit 1
 fi
 
 echo "=== Complete ==="
