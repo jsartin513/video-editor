@@ -88,6 +88,95 @@ Scrub the `.wav` at offset `0:00` — you should hear the first round's start an
   --tolerance 90
 ```
 
+**Per-round check** (recommended — anchors each round independently, re-transcribes bundled Whisper segments with 8s sub-chunks):
+
+```bash
+./src/bash/verify_overhead_schedule.sh \
+  --wav "/Users/jessicasartin/Downloads/BDL Throwdown 5 Full Timeline.wav" \
+  --schedule-dir src/output/June2026Tournament/schedule/generated \
+  --date 2026-06-20 \
+  --courts 2,3,4 \
+  --wav-start-time 09:00 \
+  --by-round
+
+# Detail for one round:
+  --by-round --round 3
+
+# Skip slow refinement (uses full-file transcript only):
+  --by-round --no-refine-bundled
+```
+
+Refined bundled segments are cached beside the transcript as `{wav}.transcript.refined.json`.
+
+**Output files** (written beside the `.wav`):
+
+| File | Contents |
+|------|----------|
+| `{wav_stem}_overhead_by_round_report.json` | Full structured report: match results, per-round speech with wav timestamp + slot offset |
+| `{wav_stem}_overhead_by_round_phrases.txt` | Human-readable phrase list (WAV time, offset from round anchor, wall time, text) |
+| `{wav_stem}.transcript.json` | Cached full-file Whisper transcript |
+| `{wav_stem}.transcript.refined.json` | Cached bundled-segment refinements |
+
+Each speech item in the JSON report includes:
+
+- `wav_timestamp` — position in the `.wav` (e.g. `04:00:48`)
+- `offset` / `offset_seconds` — seconds from that round's inferred anchor (e.g. `+4:00`)
+- `wall_time` — tournament wall clock (from `--wav-start-time`)
+- `text` — exact Whisper phrase
+- `role` / `role_label` — interpreted PA role (e.g. `countdown_play_end`, `countdown_round_boundary`, `court_call_court1`)
+
+The report root includes `audio_structure` with notes on no-blocking, the two-countdown-per-round pattern, and verification scope. Each round includes a `structure` summary with role counts.
+
+**Inject no-blocking announcements** (when clips exist in GarageBand but not in the export):
+
+Overlays the clip a few seconds into the post-buzzer silent window (same file duration;
+uses ffmpeg silencedetect to avoid talking over the countdown). Default clip: Dance Vocal#31.
+
+```bash
+# Preview insertion points (from by-round report)
+./src/bash/inject_no_blocking.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
+  --dry-run
+
+# Write {wav_stem}_with_no_blocking.wav
+./src/bash/inject_no_blocking.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
+  --verify
+
+# Fail if silencedetect cannot confirm silence at an insert point
+  --require-silence-verify
+```
+
+Clip presets: `--clip-preset three_minutes_no_blocking` (default), `no_blocking`, `three_minutes_remaining`.  
+Requires the GarageBand project under `--band-dir` (default: `~/Downloads/15 min round - foam NS 8.5 (no time limit on NB).band`).
+
+**Inject Start buzzer at play start** (after no-blocking; play-start only — not play-end or boundary buzzers):
+
+Overlays the GarageBand **Start buzzer** tone immediately after each round's "Players line up / here we go" phrase (same file duration; uses transcript phrase-end detection). Run on the no-blocking wav so prior overlays stay intact.
+
+```bash
+# Preview insertion points (use by-round report for the no-blocking wav)
+./src/bash/inject_start_buzzer.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking_overhead_by_round_report.json" \
+  --transcript "/path/to/BDL Throwdown 5 Full Timeline.wav.transcript.json" \
+  --dry-run
+
+# Write {wav_stem}_with_no_blocking_and_start_buzzer.wav
+./src/bash/inject_start_buzzer.sh \
+  --wav "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking.wav" \
+  --report "/path/to/BDL Throwdown 5 Full Timeline_with_no_blocking_overhead_by_round_report.json" \
+  --transcript "/path/to/BDL Throwdown 5 Full Timeline.wav.transcript.json" \
+  --verify
+
+# Fail if insert would overlap non-play_start speech
+  --require-phrase-clear
+```
+
+Default clip: `Start buzzer` from the same GarageBand project (`--band-dir`). Writes `{output}.injections.json` with `injection_type: start_buzzer` and a reference to the upstream no-blocking sidecar.
+
 The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
 
 **Lunch break:** skip the gap when PA was silent:
@@ -213,6 +302,8 @@ Options:
 | `collect_deliverables.sh` | Symlink/copy all matchups to `deliverables/` |
 | `validate_tournament_setup.sh` | Test pipeline on sample Week2 footage |
 | `verify_overhead_schedule.sh` | Verify overhead .wav vs schedule JSONL |
+| `inject_no_blocking.sh` | Insert no-blocking PA clips into overhead .wav using by-round report |
+| `inject_start_buzzer.sh` | Insert Start buzzer at play start into overhead .wav (after no-blocking) |
 | `excel_schedule_to_jsonl.py` | Excel → per-court `games.jsonl` |
 
 Lower-level scripts (called automatically): `combine_gopro_videos.sh`, `split_multi_source_videos.sh`.
