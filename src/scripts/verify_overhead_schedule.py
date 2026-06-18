@@ -111,6 +111,40 @@ VENUE_BUNDLE_CUE_TYPES = [
     "countdown",
 ]
 
+SPEECH_ROLE_LABELS: dict[str, str] = {
+    "prior_round_tail": "Countdown/30s from previous round (no blocking gap)",
+    "court_call_court1": "Court 1 matchup call (stream court, not in JSONL)",
+    "court_call_scheduled": "Court 2–4 matchup call (in schedule JSONL)",
+    "court_call_repeat": "Duplicate court call block (Round 1 opening only)",
+    "transition_2min": "Two minutes to next court",
+    "transition_1min": "One minute to your court",
+    "transition_30sec": "30 seconds to your court",
+    "play_start": "Players line up / here we go",
+    "halfway": "Halfway through",
+    "ninety_seconds_warning": "90 seconds remaining",
+    "thirty_seconds_play_end": "30 seconds (end of active play)",
+    "countdown_play_end": "Countdown (play ends)",
+    "thirty_seconds_round_end": "30 seconds (round boundary)",
+    "countdown_round_boundary": "Countdown (round boundary — next round starts)",
+    "no_blocking": "No blocking announcement",
+    "extra_photos": "Team photos / special announcement",
+    "other": "Other speech",
+}
+
+COURT1_RE = re.compile(r"\bcourt\s*(?:one|1)\b", re.I)
+COURT_SCHEDULED_RE = re.compile(r"\bcourt\s*(?:two|three|four|2|3|4)\b", re.I)
+NO_BLOCK_RE = re.compile(r"no\s+block", re.I)
+PHOTOS_RE = re.compile(r"team photos|report to court one for", re.I)
+COUNTDOWN_TEXT_RE = re.compile(
+    r"\b(10|ten)\b.*\b(9|nine)\b|"
+    r"\b7,\s*6,\s*5|"
+    r"\bfive,\s*four|"
+    r"three,\s*two,\s*one|"
+    r"\b2,\s*1\b|"
+    r"seven,\s*six,\s*five",
+    re.I,
+)
+
 _refine_model_cache: dict[str, Any] = {}
 
 
@@ -598,6 +632,162 @@ def collect_slot_speech(
     return items
 
 
+def _offset_near(offset: float, target: int, margin: int = 45) -> bool:
+    return abs(offset - target) <= margin
+
+
+def _looks_like_countdown(text_lower: str) -> bool:
+    return bool(COUNTDOWN_TEXT_RE.search(text_lower))
+
+
+def _is_court_call(text_lower: str) -> bool:
+    return "home team" in text_lower and (
+        COURT1_RE.search(text_lower) or COURT_SCHEDULED_RE.search(text_lower)
+    )
+
+
+def classify_speech_role(item: dict, round_idx: int) -> str:
+    text_lower = item["text"].lower()
+    offset = item["offset_seconds"]
+    cues = item.get("cues", [])
+
+    if NO_BLOCK_RE.search(text_lower):
+        return "no_blocking"
+    if PHOTOS_RE.search(text_lower):
+        return "extra_photos"
+
+    if offset < 0:
+        return "prior_round_tail"
+
+    if _is_court_call(text_lower):
+        if round_idx == 1 and offset >= 55:
+            return "court_call_repeat"
+        if COURT1_RE.search(text_lower):
+            return "court_call_court1"
+        return "court_call_scheduled"
+
+    if "transition_2min" in cues or (
+        _offset_near(offset, 121) and "two minutes" in text_lower
+    ):
+        return "transition_2min"
+    if "transition_1min" in cues or (
+        _offset_near(offset, 173) and "one minute" in text_lower and "remaining" not in text_lower
+    ):
+        return "transition_1min"
+    if "transition_30sec" in cues or (
+        "30 seconds to get" in text_lower
+        or (_offset_near(offset, 202) and "30 seconds" in text_lower and "court" in text_lower)
+    ):
+        return "transition_30sec"
+
+    if "play_start" in cues or (
+        _offset_near(offset, 240)
+        and ("players line up" in text_lower or "here we go" in text_lower)
+    ):
+        return "play_start"
+
+    if "halfway" in cues or (
+        _offset_near(offset, 780) and ("halfway" in text_lower or "way through" in text_lower)
+    ):
+        return "halfway"
+
+    if "ninety_seconds" in cues or (
+        _offset_near(offset, 1235) and ("90 seconds" in text_lower or "ninety seconds" in text_lower)
+    ):
+        return "ninety_seconds_warning"
+
+    if _looks_like_countdown(text_lower):
+        if offset >= 1450 or _offset_near(offset, 1496, margin=90):
+            return "countdown_round_boundary"
+        if offset < 90:
+            return "prior_round_tail"
+        return "countdown_play_end"
+
+    if "30 seconds" in text_lower and "court" not in text_lower:
+        if offset >= 1450 or _offset_near(offset, 1475, margin=75):
+            return "thirty_seconds_round_end"
+        if offset < 90:
+            return "prior_round_tail"
+        if _offset_near(offset, 1294, margin=75) or 1260 <= offset <= 1380:
+            return "thirty_seconds_play_end"
+        if offset >= 1450:
+            return "thirty_seconds_round_end"
+
+    return "other"
+
+
+def annotate_speech_items(speech: list[dict], round_idx: int) -> list[dict]:
+    annotated: list[dict] = []
+    for item in speech:
+        role = classify_speech_role(item, round_idx)
+        annotated.append(
+            {
+                **item,
+                "role": role,
+                "role_label": SPEECH_ROLE_LABELS[role],
+            }
+        )
+    return annotated
+
+
+def summarize_round_structure(speech: list[dict]) -> dict:
+    role_counts: dict[str, int] = {}
+    for item in speech:
+        role = item["role"]
+        role_counts[role] = role_counts.get(role, 0) + 1
+
+    return {
+        "countdown_play_end": role_counts.get("countdown_play_end", 0),
+        "countdown_round_boundary": role_counts.get("countdown_round_boundary", 0),
+        "no_blocking_segments": role_counts.get("no_blocking", 0),
+        "court1_calls": role_counts.get("court_call_court1", 0),
+        "scheduled_court_calls": role_counts.get("court_call_scheduled", 0),
+        "has_photos_or_extra": role_counts.get("extra_photos", 0) > 0,
+        "prior_round_tail_segments": role_counts.get("prior_round_tail", 0),
+        "role_counts": role_counts,
+    }
+
+
+def build_audio_structure_notes(reports: list[dict]) -> dict:
+    all_text = " ".join(item["text"].lower() for report in reports for item in report["speech"])
+    no_blocking_present = bool(NO_BLOCK_RE.search(all_text))
+
+    total_play_end = sum(report["structure"]["countdown_play_end"] for report in reports)
+    total_boundary = sum(report["structure"]["countdown_round_boundary"] for report in reports)
+    photos_rounds = [
+        report["round"]
+        for report in reports
+        if report["structure"]["has_photos_or_extra"]
+    ]
+
+    return {
+        "no_blocking_present": no_blocking_present,
+        "no_blocking_note": (
+            "No 'no blocking' announcements found in this export. Rounds run back-to-back "
+            "with PA cues at the boundary instead of a silent gap."
+            if not no_blocking_present
+            else "No-blocking announcements are present in the export."
+        ),
+        "countdown_pattern": (
+            "Each round typically has two countdowns: ~+22:00 (play ends) and ~+25:00 "
+            "(round boundary / release to next round). Without no-blocking, the next "
+            "round's court calls follow immediately."
+        ),
+        "total_countdown_play_end": total_play_end,
+        "total_countdown_round_boundary": total_boundary,
+        "rounds_with_extra_announcements": photos_rounds,
+        "court1_in_audio_not_in_schedule": True,
+        "verification_scope": (
+            "Matches cover courts 2–4 JSONL matchups and venue-wide PA template cues only. "
+            "The speech timeline includes all detected phrases (Court 1, duplicates, extras)."
+        ),
+        "transcription_note": (
+            "Phrase text is faster-whisper output; timestamps are segment start times. "
+            "Bundled segments are re-transcribed in 8s sub-chunks when --by-round refinement is enabled."
+        ),
+    }
+
+
 def print_slot_transcript(
     speech_items: list[dict],
 ) -> None:
@@ -606,22 +796,31 @@ def print_slot_transcript(
         print("  (no speech detected in this window)")
     else:
         for item in speech_items:
-            cue_str = f"  [{', '.join(item['cues'])}]" if item["cues"] else ""
+            cue_str = f"  [{', '.join(item['cues'])}]" if item.get("cues") else ""
+            role_str = f"  <{item['role']}>" if item.get("role") else ""
             print(
-                f"  {item['wav_timestamp']}  ({item['offset']}){cue_str}  {item['text']}"
+                f"  {item['wav_timestamp']}  ({item['offset']}){role_str}{cue_str}  {item['text']}"
             )
     print()
 
 
-def serialize_refinements(refinements: list[dict], wav_start_seconds: int, slot_anchor: float) -> list[dict]:
+def serialize_refinements(
+    refinements: list[dict],
+    wav_start_seconds: int,
+    slot_anchor: float,
+    round_idx: int,
+) -> list[dict]:
     serialized: list[dict] = []
     for item in refinements:
-        refined_speech = collect_slot_speech(
-            item["refined"],
-            slot_anchor=slot_anchor,
-            wav_start_seconds=wav_start_seconds,
-            pre_seconds=0,
-            post_seconds=26 * 60,
+        refined_speech = annotate_speech_items(
+            collect_slot_speech(
+                item["refined"],
+                slot_anchor=slot_anchor,
+                wav_start_seconds=wav_start_seconds,
+                pre_seconds=0,
+                post_seconds=26 * 60,
+            ),
+            round_idx,
         )
         serialized.append(
             {
@@ -662,13 +861,14 @@ def write_by_round_phrases_file(reports: list[dict], output_path: Path) -> None:
             f"Round {report['round']} ({report['schedule_label']}, wall {report['wall_start']})  "
             f"anchor {seconds_to_hms(report['slot_anchor_wav'])}"
         )
-        lines.append(f"{'WAV':<12} {'OFFSET':<8} {'WALL':<8} {'TEXT'}")
-        lines.append("-" * 90)
+        lines.append(f"{'WAV':<12} {'OFFSET':<8} {'WALL':<8} {'ROLE':<28} {'TEXT'}")
+        lines.append("-" * 110)
         for item in report["speech"]:
-            cue_note = f"  [{', '.join(item['cues'])}]" if item["cues"] else ""
+            cue_note = f"  [{', '.join(item['cues'])}]" if item.get("cues") else ""
+            role = item.get("role", "other")
             lines.append(
                 f"{item['wav_timestamp']:<12} {item['offset']:<8} {item['wall_time']:<8} "
-                f"{item['text']}{cue_note}"
+                f"{role:<28} {item['text']}{cue_note}"
             )
         lines.append("")
     output_path.write_text("\n".join(lines), encoding="utf-8")
@@ -691,6 +891,7 @@ def write_by_round_report(
         "refine_bundled": refine_bundled,
         "rounds_passed": passed,
         "rounds_total": len(reports),
+        "audio_structure": build_audio_structure_notes(reports),
         "rounds": [
             {
                 "round": report["round"],
@@ -702,6 +903,7 @@ def write_by_round_report(
                 "schedule_hint_wav_seconds": report["schedule_hint_wav"],
                 "anchor_drift_seconds": report["anchor_drift"],
                 "bundled_segments_refined": report["bundled_segments_refined"],
+                "structure": report["structure"],
                 "matchups": report["matchups"],
                 "summary": report["summary"],
                 "speech": report["speech"],
@@ -766,12 +968,18 @@ def verify_by_round(
 
         results = match_slot_events(events, slot_segments, tolerance, min_confidence)
         summary = build_summary(results, sorted({g.court_num for g in slot_games}))
-        speech = collect_slot_speech(
-            slot_segments,
-            slot_anchor,
-            global_anchor,
+        speech = annotate_speech_items(
+            collect_slot_speech(
+                slot_segments,
+                slot_anchor,
+                global_anchor,
+            ),
+            round_idx,
         )
-        refined_bundles = serialize_refinements(refinements, global_anchor, slot_anchor)
+        structure = summarize_round_structure(speech)
+        refined_bundles = serialize_refinements(
+            refinements, global_anchor, slot_anchor, round_idx
+        )
 
         report = {
             "round": round_idx,
@@ -782,6 +990,7 @@ def verify_by_round(
             "schedule_hint_wav": hint_wav,
             "anchor_drift": round(slot_anchor - hint_wav, 1),
             "bundled_segments_refined": len(refinements),
+            "structure": structure,
             "matchups": {
                 g.court_num: f"{g.home_team} vs {g.away_team}" for g in slot_games
             },

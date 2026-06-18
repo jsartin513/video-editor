@@ -123,6 +123,9 @@ Each speech item in the JSON report includes:
 - `offset` / `offset_seconds` — seconds from that round's inferred anchor (e.g. `+4:00`)
 - `wall_time` — tournament wall clock (from `--wav-start-time`)
 - `text` — exact Whisper phrase
+- `role` / `role_label` — interpreted PA role (e.g. `countdown_play_end`, `countdown_round_boundary`, `court_call_court1`)
+
+The report root includes `audio_structure` with notes on no-blocking, the two-countdown-per-round pattern, and verification scope. Each round includes a `structure` summary with role counts.
 
 The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
 
