@@ -129,6 +129,9 @@ The report root includes `audio_structure` with notes on no-blocking, the two-co
 
 **Inject no-blocking announcements** (when clips exist in GarageBand but not in the export):
 
+Overlays the clip a few seconds into the post-buzzer silent window (same file duration;
+uses ffmpeg silencedetect to avoid talking over the countdown). Default clip: Dance Vocal#31.
+
 ```bash
 # Preview insertion points (from by-round report)
 ./src/bash/inject_no_blocking.sh \
@@ -136,11 +139,14 @@ The report root includes `audio_structure` with notes on no-blocking, the two-co
   --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
   --dry-run
 
-# Write {wav_stem}_with_no_blocking.wav (default clip: Dance Vocal#31)
+# Write {wav_stem}_with_no_blocking.wav
 ./src/bash/inject_no_blocking.sh \
   --wav "/path/to/BDL Throwdown 5 Full Timeline.wav" \
   --report "/path/to/BDL Throwdown 5 Full Timeline_overhead_by_round_report.json" \
   --verify
+
+# Fail if silencedetect cannot confirm silence at an insert point
+  --require-silence-verify
 ```
 
 Clip presets: `--clip-preset three_minutes_no_blocking` (default), `no_blocking`, `three_minutes_remaining`.  
