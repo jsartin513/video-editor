@@ -88,6 +88,42 @@ Scrub the `.wav` at offset `0:00` — you should hear the first round's start an
   --tolerance 90
 ```
 
+**Per-round check** (recommended — anchors each round independently, re-transcribes bundled Whisper segments with 8s sub-chunks):
+
+```bash
+./src/bash/verify_overhead_schedule.sh \
+  --wav "/Users/jessicasartin/Downloads/BDL Throwdown 5 Full Timeline.wav" \
+  --schedule-dir src/output/June2026Tournament/schedule/generated \
+  --date 2026-06-20 \
+  --courts 2,3,4 \
+  --wav-start-time 09:00 \
+  --by-round
+
+# Detail for one round:
+  --by-round --round 3
+
+# Skip slow refinement (uses full-file transcript only):
+  --by-round --no-refine-bundled
+```
+
+Refined bundled segments are cached beside the transcript as `{wav}.transcript.refined.json`.
+
+**Output files** (written beside the `.wav`):
+
+| File | Contents |
+|------|----------|
+| `{wav_stem}_overhead_by_round_report.json` | Full structured report: match results, per-round speech with wav timestamp + slot offset |
+| `{wav_stem}_overhead_by_round_phrases.txt` | Human-readable phrase list (WAV time, offset from round anchor, wall time, text) |
+| `{wav_stem}.transcript.json` | Cached full-file Whisper transcript |
+| `{wav_stem}.transcript.refined.json` | Cached bundled-segment refinements |
+
+Each speech item in the JSON report includes:
+
+- `wav_timestamp` — position in the `.wav` (e.g. `04:00:48`)
+- `offset` / `offset_seconds` — seconds from that round's inferred anchor (e.g. `+4:00`)
+- `wall_time` — tournament wall clock (from `--wav-start-time`)
+- `text` — exact Whisper phrase
+
 The script writes `{wav_stem}_overhead_verification_report.json` next to the `.wav`. Exit code 0 when match rate ≥ 80% and max drift ≤ 120s.
 
 **Lunch break:** skip the gap when PA was silent:
