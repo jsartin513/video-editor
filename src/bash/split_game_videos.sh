@@ -198,6 +198,11 @@ for line in "${games[@]}"; do
   
   # Add team names
   team_names="${home_team} vs ${away_team}"
+  if [[ "$home_team" =~ ^[Tt][Bb][Dd]$ ]] || [[ "$away_team" =~ ^[Tt][Bb][Dd]$ ]]; then
+    if [ -n "$filename_parts" ]; then
+      filename_parts="${filename_parts}: ${start_time}"
+    fi
+  fi
   if [ -n "$filename_parts" ]; then
     filename_parts="${filename_parts}: ${team_names}"
   else
