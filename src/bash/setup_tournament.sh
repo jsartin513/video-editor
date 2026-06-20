@@ -19,6 +19,7 @@ echo "Root: $tournament_root"
 echo ""
 
 mkdir -p "$tournament_root/schedule/generated"
+mkdir -p "$tournament_root/schedule/generated_teams"
 mkdir -p "$tournament_root/deliverables"
 
 for day_courts in "2026-06-20:2,3,4" "2026-06-21:2,3"; do
@@ -45,11 +46,32 @@ EOF
   done
 done
 
+# Team GoPro SD cards (Sister Sister)
+for day in 2026-06-20 2026-06-21; do
+  team_dir="$tournament_root/teams/sister_sister/$day"
+  mkdir -p "$team_dir/merged_videos" "$team_dir/split_videos"
+  notes_file="$team_dir/recording_notes.txt"
+  if [ ! -f "$notes_file" ]; then
+    cat > "$notes_file" << EOF
+# Recording notes — Sister Sister — ${day}
+# Log any camera stop/start events (battery swaps, angle adjustments, etc.)
+# Format: HH:MM — event description
+#
+# Example:
+# 09:00 — Round robin recording started
+# 12:05 — Stopped for lunch
+# 13:30 — Bracket play recording started
+# 14:15 — Battery swap (~2 min gap)
+EOF
+  fi
+done
+
 echo "Folder tree ready."
 echo ""
 echo "--- Court checklist ---"
 echo "Sat Jun 20: court2, court3, court4 (court1 streams — skip)"
 echo "Sun Jun 21: court2, court3 (court1 streams — skip)"
+echo "Team SD:    teams/sister_sister/2026-06-20 and 2026-06-21"
 echo ""
 
 missing=()
@@ -79,6 +101,9 @@ fi
 echo ""
 echo "Next steps:"
 echo "  1. Place schedule at $tournament_root/schedule/master_schedule.xlsx"
-echo "  2. python src/scripts/excel_schedule_to_jsonl.py <excel> --output-dir $tournament_root/schedule/generated"
+echo "  2. Court schedule:"
+echo "     python src/scripts/excel_schedule_to_jsonl.py <excel> --output-dir $tournament_root/schedule/generated"
 echo "     (Re-run with --date 2026-06-21 when Sunday bracket sheets are in the workbook)"
-echo "  3. $script_dir/validate_tournament_setup.sh --dry-run"
+echo "  3. Sister Sister team schedule:"
+echo "     python src/scripts/excel_team_schedule_to_jsonl.py <excel> --teams \"Sister Sister\" --output-dir $tournament_root/schedule/generated_teams --date 2026-06-20"
+echo "  4. $script_dir/validate_tournament_setup.sh --dry-run"

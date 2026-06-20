@@ -21,6 +21,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from throwdown_bracket import build_bracket_time_map, classify_game, merge_bracket_games
+
 try:
     import openpyxl
 except ImportError:
@@ -185,8 +187,25 @@ def parse_table_sheet(sheet):
     return games
 
 
-def parse_throwdown_workbook(workbook, date, skip_courts, minutes):
+def parse_throwdown_workbook(workbook, date, skip_courts, minutes, include_bracket_placeholders=True, active_courts=None):
     aliases = build_team_aliases(workbook)
+    round_robin_games = _parse_throwdown_team_sheet_games(workbook, date, skip_courts, minutes, aliases)
+    merged, bracket_start, overview_count, bracket_count = merge_bracket_games(
+        round_robin_games,
+        workbook,
+        date,
+        skip_courts,
+        minutes,
+        aliases,
+        resolve_team_name,
+        include_placeholders=include_bracket_placeholders,
+        active_courts=active_courts,
+    )
+    return merged, bracket_start, overview_count, bracket_count
+
+
+def _parse_throwdown_team_sheet_games(workbook, date, skip_courts, minutes, aliases):
+    bracket_start, bracket_time_map = build_bracket_time_map(workbook, date)
     games = []
     seen = set()
 
@@ -227,6 +246,13 @@ def parse_throwdown_workbook(workbook, date, skip_courts, minutes):
                 continue
 
             round_num = int(round_val)
+            game_type, round_label = classify_game(
+                start_time,
+                round_num,
+                bracket_start,
+                bracket_time_map,
+                bracket_minutes=minutes,
+            )
             dedupe_key = (round_num, start_time, court_num, home_team, away_team)
             if dedupe_key in seen:
                 continue
@@ -236,8 +262,8 @@ def parse_throwdown_workbook(workbook, date, skip_courts, minutes):
                 "date": date,
                 "court": f"court{court_num}",
                 "court_display": f"Court {court_num}",
-                "type": "round_robin",
-                "round": f"Round {round_num}",
+                "type": game_type,
+                "round": round_label,
                 "home_team": home_team,
                 "away_team": away_team,
                 "start_time": start_time,
@@ -324,6 +350,16 @@ def main():
         default=None,
         help="Copy source Excel to this path (e.g. schedule/master_schedule.xlsx)",
     )
+    parser.add_argument(
+        "--no-bracket-placeholders",
+        action="store_true",
+        help="Skip TBD bracket slots (default: include placeholder games per court/time)",
+    )
+    parser.add_argument(
+        "--active-courts",
+        default=None,
+        help="Courts with GoPro SD cards, e.g. 2,3,4 (default: date-based 2-4 Sat, 2-3 Sun)",
+    )
     args = parser.parse_args()
 
     excel_path = Path(args.excel_file)
@@ -340,10 +376,27 @@ def main():
     workbook = openpyxl.load_workbook(excel_path, read_only=True, data_only=True)
     fmt = args.format if args.format != "auto" else detect_format(workbook)
     skip_courts = parse_skip_courts(args.skip_courts)
+    active_courts = None
+    if args.active_courts:
+        active_courts = [int(part.strip()) for part in args.active_courts.split(",") if part.strip()]
 
     if fmt == "throwdown":
-        all_games = parse_throwdown_workbook(workbook, args.date, skip_courts, args.minutes)
-        print(f"Parsed {len(all_games)} games from throwdown team sheets (skipped courts: {sorted(skip_courts)})")
+        all_games, bracket_start, overview_count, bracket_count = parse_throwdown_workbook(
+            workbook,
+            args.date,
+            skip_courts,
+            args.minutes,
+            include_bracket_placeholders=not args.no_bracket_placeholders,
+            active_courts=active_courts,
+        )
+        rr_count = sum(1 for g in all_games if g["type"] == "round_robin")
+        br_count = sum(1 for g in all_games if g["type"] == "bracket")
+        print(
+            f"Parsed {len(all_games)} games ({rr_count} round robin, {br_count} bracket) "
+            f"from {bracket_start}"
+        )
+        if overview_count:
+            print(f"  {overview_count} bracket matchup(s) from Overview Schedule")
     else:
         sheets = [workbook[args.sheet]] if args.sheet else workbook.worksheets
         all_games = []

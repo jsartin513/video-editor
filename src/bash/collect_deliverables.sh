@@ -79,7 +79,11 @@ count=0
 while IFS= read -r -d '' video; do
   filename="$(basename "$video")"
   rel="${video#$tournament_root/}"
-  day_court="$(echo "$rel" | cut -d/ -f1-2)"
+  if [[ "$rel" == teams/* ]]; then
+    day_court="$(echo "$rel" | cut -d/ -f1-3)"
+  else
+    day_court="$(echo "$rel" | cut -d/ -f1-2)"
+  fi
   if [ -z "$day_court" ] || [ "$day_court" = "$rel" ]; then
     day_court="unknown"
   fi

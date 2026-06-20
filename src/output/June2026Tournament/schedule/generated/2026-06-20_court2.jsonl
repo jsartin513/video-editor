@@ -8,3 +8,11 @@
 {"type": "round_robin", "round": "Round 8", "home_team": "Fresh Prince", "away_team": "Smart Guy", "start_time": "12:05", "minutes": 25, "court": "Court 2"}
 {"type": "round_robin", "round": "Round 9", "home_team": "Black Panther", "away_team": "The Parkers", "start_time": "12:30", "minutes": 25, "court": "Court 2"}
 {"type": "round_robin", "round": "Round 10", "home_team": "Thats So Raven", "away_team": "Abbott Elementary", "start_time": "12:55", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Round 1", "home_team": "TBD", "away_team": "TBD", "start_time": "13:50", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Round 1", "home_team": "TBD", "away_team": "TBD", "start_time": "14:15", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Quarters", "home_team": "TBD", "away_team": "TBD", "start_time": "14:40", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Quarters", "home_team": "TBD", "away_team": "TBD", "start_time": "15:05", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Semis", "home_team": "TBD", "away_team": "TBD", "start_time": "15:30", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Semis", "home_team": "TBD", "away_team": "TBD", "start_time": "15:55", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Finals", "home_team": "TBD", "away_team": "TBD", "start_time": "16:20", "minutes": 25, "court": "Court 2"}
+{"type": "bracket", "round": "Championship", "home_team": "TBD", "away_team": "TBD", "start_time": "16:45", "minutes": 25, "court": "Court 2"}

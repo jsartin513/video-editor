@@ -207,6 +207,11 @@ while IFS= read -r line; do
   round=$(echo "$line" | jq -r '.round // ""')
   game_type=$(echo "$line" | jq -r '.type // "round_robin"')
   video_file=$(echo "$line" | jq -r '.video_file // ""')
+  game_court=$(echo "$line" | jq -r '.court // ""')
+  effective_court="$court_name"
+  if [ -n "$game_court" ] && [ "$game_court" != "null" ]; then
+    effective_court="$game_court"
+  fi
   
   # Skip if essential fields are missing
   if [ -z "$home_team" ] || [ -z "$away_team" ] || [ -z "$start_time" ] || [ -z "$minutes" ]; then
@@ -274,8 +279,8 @@ while IFS= read -r line; do
     filename_parts="Round ${round}"
   fi
 
-  if [ -n "$court_name" ]; then
-    formatted_court=$(echo "$court_name" | sed 's/_/ /g')
+  if [ -n "$effective_court" ]; then
+    formatted_court=$(echo "$effective_court" | sed 's/_/ /g')
     if [ -n "$filename_parts" ]; then
       filename_parts="${filename_parts}: ${formatted_court}"
     else
@@ -284,6 +289,11 @@ while IFS= read -r line; do
   fi
 
   team_names="${home_team} vs ${away_team}"
+  if [[ "$home_team" =~ ^[Tt][Bb][Dd]$ ]] || [[ "$away_team" =~ ^[Tt][Bb][Dd]$ ]]; then
+    if [ -n "$filename_parts" ]; then
+      filename_parts="${filename_parts}: ${start_time}"
+    fi
+  fi
   if [ -n "$filename_parts" ]; then
     filename_parts="${filename_parts}: ${team_names}"
   else
@@ -292,7 +302,7 @@ while IFS= read -r line; do
 
   if [ -n "$tournament_name" ] && [ -n "$filename_parts" ]; then
     output_filename="${filename_parts}.mp4"
-  elif [ -n "$court_name" ] && [ -n "$filename_parts" ]; then
+  elif [ -n "$effective_court" ] && [ -n "$filename_parts" ]; then
     output_filename="${filename_parts}.mp4"
   else
     output_filename="${home_team_formatted}_vs_${away_team_formatted}.mp4"

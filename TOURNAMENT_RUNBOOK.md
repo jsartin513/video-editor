@@ -48,7 +48,119 @@ Drop the Excel file at `schedule/master_schedule.xlsx`, then:
 
 This parses Throw Down **team sheets** (`PLAYING : Court N (HOME) vs. ...`) and skips Court 1 (stream).
 
-**Current schedule coverage:** Saturday round robin only (30 games, courts 2–4). Re-run the converter when bracket and Sunday matchups are added to the spreadsheet.
+**Current schedule coverage:** Saturday round robin plus **bracket placeholder slots** (TBD teams) for courts 2–4 from 13:50 onward. The same court SD workflow splits both. Fill in team names after seeding with `fill_bracket_teams.py`, or re-run the converter once Overview Schedule bracket rows are filled in.
+
+### Bracket placeholders (TBD → real teams)
+
+Court JSONL includes one bracket slot per court per bracket time with `TBD` teams until matchups are known. Split filenames include the start time to keep them unique:
+
+```
+Bracket Quarters: Court 2: 14:40: TBD vs TBD.mp4
+```
+
+After seeding:
+
+```bash
+.venv/bin/python src/scripts/fill_bracket_teams.py \
+  --jsonl src/output/June2026Tournament/schedule/generated/2026-06-20_court2.jsonl \
+  --updates src/output/June2026Tournament/schedule/bracket_teams.json \
+  --split-dir src/output/June2026Tournament/2026-06-20/court2/split_videos \
+  --rename
+```
+
+See `schedule/bracket_teams.example.json` for the updates file format.
+
+## Team GoPro SD cards (optional)
+
+Some teams record their own sideline footage (e.g. Sister Sister). Team sheets in the same Excel workbook list every **PLAYING** slot for that team — including stream-court and away games that the court converter skips.
+
+### Folder layout
+
+```
+src/output/June2026Tournament/
+├── teams/
+│   ├── sister_sister/
+│   │   ├── 2026-06-20/          # raw GX*.MP4 + merged_videos/ + split_videos/
+│   │   └── 2026-06-21/
+│   └── fresh_prince/
+│       └── ...
+├── schedule/
+│   ├── generated/               # court JSONL ({date}_court{N}.jsonl)
+│   └── generated_teams/         # team JSONL ({date}_{team_slug}.jsonl)
+```
+
+Label each team SD card (e.g. `Team-Sister-Sister-Sat`). Import Saturday and Sunday clips into the matching day folder.
+
+### One-time team setup
+
+```bash
+./src/bash/setup_team_folders.sh src/output/June2026Tournament
+# Or only specific teams:
+./src/bash/setup_team_folders.sh src/output/June2026Tournament --teams "Sister Sister,Fresh Prince"
+```
+
+### Team schedule → JSONL
+
+Uses the same `master_schedule.xlsx` as the court converter:
+
+```bash
+.venv/bin/python src/scripts/excel_team_schedule_to_jsonl.py \
+  src/output/June2026Tournament/schedule/master_schedule.xlsx \
+  --output-dir src/output/June2026Tournament/schedule/generated_teams \
+  --date 2026-06-20 --minutes 25
+
+# List team sheet names and folder slugs:
+.venv/bin/python src/scripts/excel_team_schedule_to_jsonl.py \
+  src/output/June2026Tournament/schedule/master_schedule.xlsx --list-teams
+
+# Single team only:
+.venv/bin/python src/scripts/excel_team_schedule_to_jsonl.py \
+  src/output/June2026Tournament/schedule/master_schedule.xlsx \
+  --teams "Sister Sister" \
+  --output-dir src/output/June2026Tournament/schedule/generated_teams \
+  --date 2026-06-20
+```
+
+Re-run with `--date 2026-06-21` when Sunday matchups are in the workbook.
+
+### After each day (team footage)
+
+**1. Import team SD card**
+
+```bash
+./src/bash/import_team_sd.sh \
+  --dest src/output/June2026Tournament/teams/sister_sister/2026-06-20 \
+  --card Team-Sister-Sister-Sat
+```
+
+**2. Merge + split**
+
+```bash
+./src/bash/process_team_day.sh \
+  src/output/June2026Tournament \
+  --date 2026-06-20 --teams sister_sister --dry-run
+
+./src/bash/process_team_day.sh \
+  src/output/June2026Tournament \
+  --date 2026-06-20 --teams sister_sister
+```
+
+Process all teams with imported footage (omit `--teams`):
+
+```bash
+./src/bash/process_team_day.sh src/output/June2026Tournament --date 2026-06-20
+```
+
+Team matchup files land in `teams/{slug}/{date}/split_videos/` with names like:
+
+```
+Round Robin Round 2: Court 2: Sister Sister vs Static Shock.mp4
+Bracket Quarters: Court 3: Sister Sister vs Family Matters.mp4
+```
+
+Playoff games are detected automatically from start times at or after bracket play (13:50 Saturday). The first half of the filename uses the inferred bracket round (`Round 1`, `Quarters`, `Semis`, `Finals`, `Championship`) instead of `Round Robin Round N`. Re-run the team schedule converter after bracket matchups are added to the Excel sheets.
+
+`collect_deliverables.sh` picks up team split videos under `deliverables/teams/{slug}/{date}/`.
 
 ## Overhead audio verification
 
@@ -305,6 +417,11 @@ Options:
 | `inject_no_blocking.sh` | Insert no-blocking PA clips into overhead .wav using by-round report |
 | `inject_start_buzzer.sh` | Insert Start buzzer at play start into overhead .wav (after no-blocking) |
 | `excel_schedule_to_jsonl.py` | Excel → per-court `games.jsonl` |
+| `excel_team_schedule_to_jsonl.py` | Excel → per-team `games.jsonl` |
+| `setup_team_folders.sh` | Create `teams/{slug}/{date}/` tree |
+| `import_team_sd.sh` | Team SD card → team day folder |
+| `process_team_day.sh` | Merge + split all team footage for one day |
+| `fill_bracket_teams.py` | Fill bracket team names + rename TBD split videos |
 
 Lower-level scripts (called automatically): `combine_gopro_videos.sh`, `split_multi_source_videos.sh`.
 
